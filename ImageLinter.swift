@@ -64,22 +64,39 @@ func covertToString(fileSize: UInt64) -> String {
 }
 
 let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
+let pdfRasterPattern = #".*\/[Ii]mage.*"#
+let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
     if imageFileName.hasSuffix(".pdf") || imageFileName.hasSuffix(".png") {
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
 
         let fileSize = fileSize(fromPath: imageFilePath)
-        
+
         if imageFileName.hasSuffix(".pdf") {
             if fileSize > maxPdfSize {
-                printError(filePath: imageFilePath, message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize)).")
+                printError(
+                    filePath: imageFilePath,
+                    message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize))."
+                )
             }
+
+            if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
+                let range = NSRange(location: 0, length: string.count)
+                if pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                    printError(filePath: imageFilePath, message: "PDF File is not vector")
+                }
+            } else {
+                printError(filePath: imageFilePath, message: "Can not parse PDF File")
+            }
+
         } else if imageFileName.hasSuffix(".png") {
             if fileSize > maxPngSize {
-                printError(filePath: imageFilePath, message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize)).")
+                printError(
+                    filePath: imageFilePath,
+                    message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize))."
+                )
             }
         }
-        
     }
 }
 
