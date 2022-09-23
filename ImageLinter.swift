@@ -2,6 +2,21 @@
 
 import Foundation
 
+/**
+ ImageLinter.swift
+ version 1.0
+
+ Created by Sergey Balalaev on 23.09.22.
+ Copyright (c) 2022 ByteriX. All rights reserved.
+
+ Script can:
+ 1. Checking size of PDF and PNG files
+ 2. Catch raster from PDF 
+
+ Using from build phase:
+ ${SRCROOT}/Scripts/ImageLinter.swift
+ */
+
 /// For enable or disable this script
 let isEnabled = true
 
@@ -27,7 +42,7 @@ var errorsCount = 0
 
 if isEnabled == false {
     let firstArgument = CommandLine.arguments[0]
-    print("\(firstArgument):\(#line): warning: localization check cancelled")
+    print("\(firstArgument):\(#line): warning: images checking cancelled")
     exit(000)
 }
 
