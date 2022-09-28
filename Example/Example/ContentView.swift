@@ -17,6 +17,12 @@ struct ContentView: View {
             Image("TruePng")
             Image("TruePdf")
             Image("FalsePdf")
+            Image("Doublicate")
+            
+            if let image = UIImage(named: "NotDoublicated") {
+                Image(uiImage: image)
+            }
+            
         }
         .padding()
     }
