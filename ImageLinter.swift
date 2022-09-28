@@ -226,7 +226,7 @@ class ImageInfo {
         }
     }
     
-    func checkDoublicate() {
+    func checkDuplicate() {
         guard paths.count > 1 else {
             return
         }
@@ -239,7 +239,7 @@ class ImageInfo {
                 }
             }
             if isDifferentImages {
-                error(with: "Doublicated image with name: '\(name)'")
+                error(with: "Duplicated image with name: '\(name)'")
             }
         }
     }
@@ -330,7 +330,7 @@ for unusedImage in unusedImages {
     }
 }
 for imageInfo in foundedImages.values {
-    imageInfo.checkDoublicate()
+    imageInfo.checkDuplicate()
 }
 
 print("Number of warnings: \(warningsCount)")
