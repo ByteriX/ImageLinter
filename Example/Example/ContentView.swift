@@ -23,6 +23,8 @@ struct ContentView: View {
                 Image(uiImage: image)
             }
             
+            Image("NotFoundImage")
+            
         }
         .padding()
     }

@@ -14,6 +14,7 @@ import Foundation
  2. Catch raster from PDF
  3. Checking duplicate images
  4. Checking unused image files
+ 5. Search undefined images
 
  Using from build phase:
  ${SRCROOT}/Scripts/ImageLinter.swift
@@ -50,6 +51,8 @@ let usingTypes: [UsingType] = [
   ]
  */
 let ignoredUnusedImages: Set<String> = [
+]
+let ignoredUndefinedImages: Set<String> = [
 ]
 
 // Maximum size of PDF files
@@ -110,6 +113,17 @@ func printError(filePath: String, message: String,
         warningsCount += 1
     } else {
         errorsCount += 1
+    }
+}
+
+extension String {
+    
+    var linesCount: Int {
+        return self.reduce(into: 1) { (count, letter) in
+             if letter == "\n" {      // This treats CRLF as one "letter", contrary to UnicodeScalars
+                count += 1
+             }
+        }
     }
 }
 
@@ -305,14 +319,14 @@ for regexPattern in searchUsingRegexPatterns {
                 regex?.enumerateMatches(in: string,
                                         options: [],
                                         range: range) { result, _, _ in
-                    addUsedImage(from: string, result: result)
+                    addUsedImage(from: string, result: result, path: sourceFilePath)
                 }
             }
         }
     }
 }
-func addUsedImage(from string: String, result: NSTextCheckingResult?) {
-    guard let result = result else {
+func addUsedImage(from string: String, result: NSTextCheckingResult?, path: String) {
+    guard let result = result, result.numberOfRanges > 0 else {
         return
     }
     // first range is matching, all next is groups
@@ -320,15 +334,20 @@ func addUsedImage(from string: String, result: NSTextCheckingResult?) {
         (string as NSString).substring(with: result.range(at: index))
     }.joined()
     usedImages.append(value)
+    if foundedImages[value] == nil, ignoredUndefinedImages.contains(value) == false {
+        let line = (string as NSString).substring(with: NSRange(location: 0, length: result.range(at: 0).location)).linesCount
+        
+        printError(filePath: path, message: "Not found image with name '\(value)'", line: line)
+    }
 }
 
 let unusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(ignoredUnusedImages)
-
 for unusedImage in unusedImages {
     if let imageInfo = foundedImages[unusedImage] {
         imageInfo.error(with: "File unused from code.")
     }
 }
+// duplicated checking
 for imageInfo in foundedImages.values {
     imageInfo.checkDuplicate()
 }
