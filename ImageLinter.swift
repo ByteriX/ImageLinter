@@ -12,7 +12,8 @@ import Foundation
  Script can:
  1. Checking size of PDF and PNG files
  2. Catch raster from PDF
- 3. Checking unused image files
+ 3. Checking duplicate images
+ 4. Checking unused image files
 
  Using from build phase:
  ${SRCROOT}/Scripts/ImageLinter.swift
@@ -30,13 +31,25 @@ let relativeSourcePath = "/."
 /// Using localizations type from code. If you use custom you need define regex pattern
 enum UsingType {
     case swiftUI
+    case uiKit
     case swiftGen(enumName: String = "Asset")
     case custom(pattern: String)
 }
 
 /// yuo can use many types
 let usingTypes: [UsingType] = [
-    .swiftUI
+    .swiftUI, .uiKit
+]
+
+/**
+ If you want to exclude unused image from checking, you can define they this
+
+ Example:
+  let ignoredUnusedImages = [
+     "ApplicationPoster"
+  ]
+ */
+let ignoredUnusedImages: Set<String> = [
 ]
 
 // Maximum size of PDF files
@@ -58,7 +71,9 @@ for usingType in usingTypes {
     case .custom(let pattern):
         searchUsingRegexPatterns.append(pattern)
     case .swiftUI:
-        searchUsingRegexPatterns.append("Image\\(\"(\\w+)\"")
+        searchUsingRegexPatterns.append("Image.*\\(.*\"(\\w+)\"")
+    case .uiKit:
+        searchUsingRegexPatterns.append("UImage.*\\(.*\named:*\"(\\w+)\"")
     case .swiftGen(let enumName):
         searchUsingRegexPatterns.append(enumName + #"\.((?:\.*[A-Z]{1}[A-z]*[0-9]*)*)\s*((?:\.*[a-z]{1}[A-z]*[0-9]*))\.image"#)
     }
@@ -114,6 +129,9 @@ func covertToString(fileSize: UInt64) -> String {
 }
 
 let imagesetExtension = ".imageset"
+let appIconExtension = ".appiconset"
+let assetExtension = ".xcassets"
+let imageScaleSuffixes = (1...3).map { "@\($0)x" }
 class ImageInfo {
     let name: String
     var paths: [String]
@@ -123,12 +141,57 @@ class ImageInfo {
         self.paths = [path]
     }
     
-    static func processFound(name: String, path: String) {
+    static func processFound(path: String) {
+        var isAsset = false
+        let components = path.split(separator: "/")
+        for component in components {
+            if component.hasSuffix(assetExtension) {
+                isAsset = true
+            } else {
+                if isAsset == false { // only for asset
+                    continue
+                }
+                if component.hasSuffix(imagesetExtension) { // it is asset
+                    let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
+                    processFound(name: name, path: path)
+                    
+                    break
+                } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
+                    return
+                }
+            }
+        }
+        if !isAsset {
+            let name = nameOfImageFile(path: path)
+            processFound(name: name, path: path)
+        }
+    }
+    
+    static private func processFound(name: String, path: String) {
         if let existImage = foundedImages[name] {
             existImage.paths.append(path)
         } else {
             foundedImages[name] = ImageInfo(name: name, path: path)
         }
+    }
+    
+    static func nameOfImageFile(path: String) -> String {
+        return pathOfImageFile(path: (path as NSString).lastPathComponent)
+    }
+    
+    static func pathOfImageFile(path: String) -> String {
+        var name = (path as NSString).deletingPathExtension
+        for scaleSuffix in imageScaleSuffixes {
+            if name.hasSuffix(scaleSuffix) {
+                name = String(name.dropLast(scaleSuffix.count))
+                break
+            }
+        }
+        return name
+    }
+    
+    static func isTheSameImage(path1: String, path2: String) -> Bool {
+        pathOfImageFile(path: path1) == pathOfImageFile(path: path2)
     }
     
     var assetPath: String? {
@@ -155,6 +218,31 @@ class ImageInfo {
         }
         return result
     }
+    
+    func error(with message: String){
+        for path in self.paths {
+            let imageFilePath = "\(imagesPath)/\(path)"
+            printError(filePath: imageFilePath, message: message)
+        }
+    }
+    
+    func checkDoublicate() {
+        guard paths.count > 1 else {
+            return
+        }
+        if assetPath == nil {
+            var isDifferentImages = false
+            for path in paths {
+                if !Self.isTheSameImage(path1: paths.first ?? "", path2: path) {
+                    isDifferentImages = true
+                    break
+                }
+            }
+            if isDifferentImages {
+                error(with: "Doublicated image with name: '\(name)'")
+            }
+        }
+    }
 }
 
 let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
@@ -167,18 +255,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
         
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
         
-        let components = imageFileName.split(separator: "/")
-        if components.count == 0 { // it just image
-            let name = (imageFileName as NSString).deletingPathExtension
-            ImageInfo.processFound(name: name, path: imageFileName)
-        } else {
-            for component in components {
-                if component.hasSuffix(imagesetExtension) { // it is asset
-                    let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    ImageInfo.processFound(name: name, path: imageFileName)
-                }
-            }
-        }
+        ImageInfo.processFound(path: imageFileName)
 
         let fileSize = fileSize(fromPath: imageFilePath)
 
@@ -245,18 +322,15 @@ func addUsedImage(from string: String, result: NSTextCheckingResult?) {
     usedImages.append(value)
 }
 
-let unusedImages = Set(foundedImages.keys).subtracting(usedImages)
+let unusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(ignoredUnusedImages)
 
 for unusedImage in unusedImages {
     if let imageInfo = foundedImages[unusedImage] {
-        for path in imageInfo.paths {
-            let imageFilePath = "\(imagesPath)/\(path)"
-            printError(
-                filePath: imageFilePath,
-                message: "File unused from code."
-            )
-        }
+        imageInfo.error(with: "File unused from code.")
     }
+}
+for imageInfo in foundedImages.values {
+    imageInfo.checkDoublicate()
 }
 
 print("Number of warnings: \(warningsCount)")

@@ -17,9 +17,9 @@ struct ContentView: View {
             Image("TruePng")
             Image("TruePdf")
             Image("FalsePdf")
-            Image("Doublicate")
+            Image("Duplicate")
             
-            if let image = UIImage(named: "NotDoublicated") {
+            if let image = UIImage(named: "NotDuplicated") {
                 Image(uiImage: image)
             }
             
