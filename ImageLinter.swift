@@ -1,6 +1,7 @@
 #!/usr/bin/env xcrun --sdk macosx swift
 
 import Foundation
+import AppKit
 
 /**
  ImageLinter.swift
@@ -15,6 +16,7 @@ import Foundation
  3. Checking duplicate images
  4. Checking unused image files
  5. Search undefined images
+ 6. Compare scaled images size
 
  Using from build phase:
  ${SRCROOT}/Scripts/ImageLinter.swift
@@ -126,6 +128,23 @@ extension String {
              }
         }
     }
+    
+    var scale: Int? {
+        guard (self as NSString).contains("x") else {
+            return nil
+        }
+        return Int(self.dropLast(1))
+    }
+}
+
+extension NSImage{
+    var pixelSize: NSSize?{
+        if let rep = self.representations.first{
+            let size = NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+            return size
+        }
+        return nil
+    }
 }
 
 let imagesPath = FileManager.default.currentDirectoryPath + relativeImagesPath
@@ -146,20 +165,35 @@ func covertToString(fileSize: UInt64) -> String {
 let imagesetExtension = ".imageset"
 let appIconExtension = ".appiconset"
 let assetExtension = ".xcassets"
-let imageScaleSuffixes = (1...3).map { "@\($0)x" }
+let imageScales = (1...3)
 class ImageInfo {
-    let name: String
-    var paths: [String]
-    
-    init(name: String, path: String) {
-        self.name = name
-        self.paths = [path]
+    struct File {
+        let path: String
+        // if nil that vector-universal
+        let scale: Int?
     }
+    
+    let name: String
+    var files: [File]
+    
+    init(name: String, path: String, scale: Int?) {
+        self.name = name
+        self.files = [File(path: path, scale: scale)]
+    }
+    
+    private struct AssetContents: Decodable {
+        let images: [Image]
+        struct Image : Decodable {
+            let filename: String?
+            let scale: String?
+        }
+    }
+    
     
     static func processFound(path: String) {
         var isAsset = false
         let components = path.split(separator: "/")
-        for component in components {
+        for (index, component) in components.enumerated() {
             if component.hasSuffix(assetExtension) {
                 isAsset = true
             } else {
@@ -168,8 +202,23 @@ class ImageInfo {
                 }
                 if component.hasSuffix(imagesetExtension) { // it is asset
                     let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    processFound(name: name, path: path)
-                    
+                    let contentsPath = components[0..<index + 1].joined(separator: "/") + "/Contents.json"
+                    if let contentsData = NSData(contentsOfFile: contentsPath) as? Data,
+                       let contents = try? JSONDecoder().decode(AssetContents.self, from: contentsData)
+                    {
+                        //print(contents)
+                        let fileName = (path as NSString).lastPathComponent
+                        let scale: Int? = contents.images.reduce(into: nil) { (result, image) in
+                            if image.filename == fileName {
+                                result = image.scale?.scale
+                            }
+                        }
+                        processFound(name: name, path: path, scale: scale)
+                    } else {
+                        printError(filePath: path, message: "Not readed scale information", isWarning: true)
+                        
+                        processFound(name: name, path: path, scale: nil)
+                    }
                     break
                 } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
                     return
@@ -178,47 +227,50 @@ class ImageInfo {
         }
         if !isAsset {
             let name = nameOfImageFile(path: path)
-            processFound(name: name, path: path)
+            processFound(name: name.path, path: path, scale: name.scale)
         }
     }
     
-    static private func processFound(name: String, path: String) {
+    static private func processFound(name: String, path: String, scale: Int?) {
         if let existImage = foundedImages[name] {
-            existImage.paths.append(path)
+            existImage.files.append(File(path: path, scale: scale))
         } else {
-            foundedImages[name] = ImageInfo(name: name, path: path)
+            foundedImages[name] = ImageInfo(name: name, path: path, scale: scale)
         }
     }
     
-    static func nameOfImageFile(path: String) -> String {
+    static func nameOfImageFile(path: String) -> (path: String, scale: Int) {
         return pathOfImageFile(path: (path as NSString).lastPathComponent)
     }
     
-    static func pathOfImageFile(path: String) -> String {
+    static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
         var name = (path as NSString).deletingPathExtension
-        for scaleSuffix in imageScaleSuffixes {
+        var scale = 1
+        for imageScale in imageScales {
+            let scaleSuffix = "@\(imageScale)x"
             if name.hasSuffix(scaleSuffix) {
                 name = String(name.dropLast(scaleSuffix.count))
+                scale = imageScale
                 break
             }
         }
-        return name
+        return (name, scale)
     }
     
     static func isTheSameImage(path1: String, path2: String) -> Bool {
-        pathOfImageFile(path: path1) == pathOfImageFile(path: path2)
+        pathOfImageFile(path: path1).path == pathOfImageFile(path: path2).path
     }
     
     var assetPath: String? {
         var result: String? = nil
-        for imageFileName  in paths {
-            let components = imageFileName.split(separator: "/")
+        for imageFile in files {
+            let components = imageFile.path.split(separator: "/")
             if components.count == 0 { // it just image
                 return nil
             } else {
                 for component in components {
                     if component.hasSuffix(imagesetExtension) { // it is asset
-                        var name = (imageFileName as NSString).components(separatedBy: imagesetExtension).first ?? ""
+                        var name = (imageFile.path as NSString).components(separatedBy: imagesetExtension).first ?? ""
                         name = name + imagesetExtension
                         if let result = result {
                             if name != result {
@@ -235,26 +287,64 @@ class ImageInfo {
     }
     
     func error(with message: String){
-        for path in self.paths {
-            let imageFilePath = "\(imagesPath)/\(path)"
+        for file in self.files {
+            let imageFilePath = "\(imagesPath)/\(file.path)"
             printError(filePath: imageFilePath, message: message)
         }
     }
     
     func checkDuplicate() {
-        guard paths.count > 1 else {
+        guard files.count > 1 else {
             return
         }
         if assetPath == nil {
             var isDifferentImages = false
-            for path in paths {
-                if !Self.isTheSameImage(path1: paths.first ?? "", path2: path) {
+            for file in files {
+                if !Self.isTheSameImage(path1: files.first?.path ?? "", path2: file.path) {
                     isDifferentImages = true
                     break
                 }
             }
             if isDifferentImages {
                 error(with: "Duplicated image with name: '\(name)'")
+            }
+        }
+    }
+    
+    func checkImageSize() {
+        var scaledSize: (width: Int, height: Int)? = nil
+        for file in files {
+            let imageFilePath = "\(imagesPath)/\(file.path)"
+            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize
+            {
+                let size = image.size
+                if pixelSize.height == 0, pixelSize.width == 0{
+                    if size.height != 0, size.width != 0 {
+                        // it's okey just vector image
+                        if let scale = file.scale {
+                            printError(filePath: imageFilePath, message: "It is vector image. But it has scale = \(scale)", isWarning: true)
+                        }
+                    } else {
+                        printError(filePath: imageFilePath, message: "Image has zero size", isWarning: true)
+                    }
+                } else {
+                    if let scale = file.scale {
+                        if Int(pixelSize.height) % scale != 0 || Int(pixelSize.width) % scale != 0 {
+                            printError(filePath: imageFilePath, message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale)")
+                        } else {
+                            let newScaledSize = (Int(pixelSize.width) / scale, Int(pixelSize.height) / scale)
+                            if let scaledSize = scaledSize {
+                                if scaledSize != newScaledSize {
+                                    printError(filePath: imageFilePath, message: "Image has different size for scaled group. Real size is \(pixelSize) with scale = \(scale) but expected \(NSSize(width: scaledSize.0 * scale, height:scaledSize.1 * scale))")
+                                }
+                            } else {
+                                scaledSize = newScaledSize
+                            }
+                        }
+                    }
+                }
+            } else {
+                printError(filePath: imageFilePath, message: "That is not image", isWarning: true)
             }
         }
     }
@@ -351,8 +441,12 @@ for unusedImage in unusedImages {
 // duplicated checking
 for imageInfo in foundedImages.values {
     imageInfo.checkDuplicate()
+    if isCheckingScaleSize {
+        imageInfo.checkImageSize()
+    }
 }
 
+print("Number of images: \(foundedImages.values.reduce(into: 0){ $0 += $1.files.count } )")
 print("Number of warnings: \(warningsCount)")
 print("Number of errors: \(errorsCount)")
 print("Time: \(Date().timeIntervalSince(startDate)) sec.")
