@@ -25,6 +25,12 @@ struct ContentView: View {
             
             Image("NotFoundImage")
             
+            Image("MixedUp1")
+            Image("MixedUp2")
+            Image("MixedUp3")
+            Image("BadRaster")
+            
+            
         }
         .padding()
     }

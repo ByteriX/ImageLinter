@@ -14,6 +14,9 @@
 		C3F03CDC28E43ED1004CFE58 /* NotDuplicated@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CD928E43ED1004CFE58 /* NotDuplicated@2x.png */; };
 		C3F03CDD28E43ED1004CFE58 /* NotDuplicated.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CDA28E43ED1004CFE58 /* NotDuplicated.png */; };
 		C3F03CDE28E43ED1004CFE58 /* NotDuplicated@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CDB28E43ED1004CFE58 /* NotDuplicated@3x.png */; };
+		C3F03CE428E6E806004CFE58 /* MixedUp3.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE128E6E806004CFE58 /* MixedUp3.png */; };
+		C3F03CE528E6E806004CFE58 /* MixedUp3@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */; };
+		C3F03CE628E6E806004CFE58 /* MixedUp3@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +29,9 @@
 		C3F03CD928E43ED1004CFE58 /* NotDuplicated@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NotDuplicated@2x.png"; sourceTree = "<group>"; };
 		C3F03CDA28E43ED1004CFE58 /* NotDuplicated.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = NotDuplicated.png; sourceTree = "<group>"; };
 		C3F03CDB28E43ED1004CFE58 /* NotDuplicated@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NotDuplicated@3x.png"; sourceTree = "<group>"; };
+		C3F03CE128E6E806004CFE58 /* MixedUp3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = MixedUp3.png; sourceTree = "<group>"; };
+		C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@2x.png"; sourceTree = "<group>"; };
+		C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@3x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +68,9 @@
 				C3F03CC828E37B90004CFE58 /* ExampleApp.swift */,
 				C3F03CCA28E37B90004CFE58 /* ContentView.swift */,
 				C3F03CCC28E37B92004CFE58 /* Assets.xcassets */,
+				C3F03CE128E6E806004CFE58 /* MixedUp3.png */,
+				C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */,
+				C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */,
 				C3F03CDA28E43ED1004CFE58 /* NotDuplicated.png */,
 				C3F03CD928E43ED1004CFE58 /* NotDuplicated@2x.png */,
 				C3F03CDB28E43ED1004CFE58 /* NotDuplicated@3x.png */,
@@ -138,9 +147,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				C3F03CD028E37B92004CFE58 /* Preview Assets.xcassets in Resources */,
+				C3F03CE528E6E806004CFE58 /* MixedUp3@2x.png in Resources */,
 				C3F03CCD28E37B92004CFE58 /* Assets.xcassets in Resources */,
 				C3F03CDD28E43ED1004CFE58 /* NotDuplicated.png in Resources */,
+				C3F03CE628E6E806004CFE58 /* MixedUp3@3x.png in Resources */,
 				C3F03CDC28E43ED1004CFE58 /* NotDuplicated@2x.png in Resources */,
+				C3F03CE428E6E806004CFE58 /* MixedUp3.png in Resources */,
 				C3F03CDE28E43ED1004CFE58 /* NotDuplicated@3x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

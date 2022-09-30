@@ -61,8 +61,9 @@ let maxPdfSize: UInt64 = 10_000
 // Maximum size of PNG files
 let maxPngSize: UInt64 = 100_000
 
-let isCheckingSize = true
+let isCheckingFileSize = true
 let isCheckingPdfVector = true
+let isCheckingScaleSize = true
 
 // MARK: end of settings the script
 
@@ -274,7 +275,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
         let fileSize = fileSize(fromPath: imageFilePath)
 
         if imageFileName.hasSuffix(".pdf") {
-            if isCheckingSize, fileSize > maxPdfSize {
+            if isCheckingFileSize, fileSize > maxPdfSize {
                 printError(
                     filePath: imageFilePath,
                     message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize))."
@@ -293,7 +294,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
             }
             
         } else if imageFileName.hasSuffix(".png") {
-            if isCheckingSize, fileSize > maxPngSize {
+            if isCheckingFileSize, fileSize > maxPngSize {
                 printError(
                     filePath: imageFilePath,
                     message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize))."
