@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.1
+ version 1.2
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
@@ -13,10 +13,11 @@ import AppKit
  Script can:
  1. Checking size of PDF and PNG files
  2. Catch raster from PDF
- 3. Checking duplicate images
- 4. Checking unused image files
- 5. Search undefined images
- 6. Compare scaled images size
+ 3. Checking unused image files
+ 4. Search undefined images
+ 5. Comparing scaled images size
+ 6. Checking duplicate images by name
+ 7. Checking duplicate images by content (but identical)
 
  Using from build phase:
  ${SRCROOT}/Scripts/ImageLinter.swift
@@ -66,6 +67,8 @@ let maxPngSize: UInt64 = 100_000
 let isCheckingFileSize = true
 let isCheckingPdfVector = true
 let isCheckingScaleSize = true
+let isCheckingDuplicatedByName = true
+let isCheckingDuplicatedByContent = true
 
 // MARK: end of settings the script
 
@@ -147,6 +150,16 @@ extension NSImage{
     }
 }
 
+extension CGImage {
+    var png: Data? {
+        guard let mutableData = CFDataCreateMutable(nil, 0),
+            let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, self, nil)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return mutableData as Data
+    }
+}
+
 let imagesPath = FileManager.default.currentDirectoryPath + relativeImagesPath
 
 func fileSize(fromPath path: String) -> UInt64 {
@@ -175,6 +188,8 @@ class ImageInfo {
     
     let name: String
     var files: [File]
+    
+    var hash: String = ""
     
     init(name: String, path: String, scale: Int?) {
         self.name = name
@@ -293,7 +308,7 @@ class ImageInfo {
         }
     }
     
-    func checkDuplicate() {
+    func checkDuplicateByName() {
         guard files.count > 1 else {
             return
         }
@@ -321,6 +336,7 @@ class ImageInfo {
                 if pixelSize.height == 0, pixelSize.width == 0{
                     if size.height != 0, size.width != 0 {
                         // it's okey just vector image
+                        // but can problems
                         if let scale = file.scale {
                             printError(filePath: imageFilePath, message: "It is vector image. But it has scale = \(scale)", isWarning: true)
                         }
@@ -347,6 +363,42 @@ class ImageInfo {
                 printError(filePath: imageFilePath, message: "That is not image", isWarning: true)
             }
         }
+    }
+    
+    func calculateData() -> Data? {
+        var maxScale = 0
+        var result: Data? = nil
+        for file in files {
+            let imageFilePath = "\(imagesPath)/\(file.path)"
+            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize
+            {
+                let size = image.size
+                if pixelSize.height == 0, pixelSize.width == 0{
+                    if size.height != 0, size.width != 0 {
+                        // it's okey just vector image
+                        var imageRect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+                        let cgImage = image.cgImage(forProposedRect: &imageRect, context: nil, hints: nil)
+                        if let data = cgImage?.png {
+                            result = data
+                            maxScale = 1
+                        }
+                    }
+                } else {
+                    if let scale = file.scale {
+                        // calculate hash
+                        if maxScale < scale {
+                            var imageRect = CGRect(x: 0, y: 0, width: Int(pixelSize.width) / scale, height: Int(pixelSize.height) / scale)
+                            let cgImage = image.cgImage(forProposedRect: &imageRect, context: nil, hints: nil)
+                            if let data = cgImage?.png {
+                                result = data
+                                maxScale = scale
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result
     }
 }
 
@@ -438,11 +490,34 @@ for unusedImage in unusedImages {
         imageInfo.error(with: "File unused from code.")
     }
 }
-// duplicated checking
-for imageInfo in foundedImages.values {
-    imageInfo.checkDuplicate()
+
+let images: [ImageInfo] = foundedImages.values.map{ $0 }
+for imageInfo in images {
+    if isCheckingDuplicatedByName {
+        imageInfo.checkDuplicateByName()
+    }
     if isCheckingScaleSize {
         imageInfo.checkImageSize()
+    }
+    if isCheckingDuplicatedByContent {
+        if let data = imageInfo.calculateData() {
+            imageInfo.hash = "\(data.count)"
+        }
+    }
+}
+
+if isCheckingDuplicatedByContent {
+    for (index, imageInfo1) in images.enumerated() {
+        for i in index+1..<images.count {
+            let imageInfo2 = images[i]
+            if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash, imageInfo1.calculateData() == imageInfo2.calculateData() {
+                let file1 = imageInfo1.files.first!
+                let imageFilePath1 = "\(imagesPath)/\(file1.path)"
+                let file2 = imageInfo2.files.first!
+                let imageFilePath2 = "\(imagesPath)/\(file2.path)"
+                printError(filePath: imageFilePath1, message: "Duplicate by content with '\(imageFilePath2)'")
+            }
+        }
     }
 }
 
