@@ -1,12 +1,12 @@
 {
   "images" : [
     {
-      "filename" : "icons8-Infographic-Close50.png",
+      "filename" : "NotUsingImage50.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "icons8-Infographic-Close100.png",
+      "filename" : "NotUsingImage100.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

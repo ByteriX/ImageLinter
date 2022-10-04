@@ -42,7 +42,7 @@ struct ContentView: View {
         
         Image("DuplicatedImage1")
         Image("DuplicatedImage2")
-        Image("DuplicatedImage3")
+        Image("Folder/DuplicatedImage3")
         Image("DuplicatedImage4")
     }
     

@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.2
+ version 1.2.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
@@ -58,6 +58,10 @@ let ignoredUnusedImages: Set<String> = [
 let ignoredUndefinedImages: Set<String> = [
 ]
 
+let rastorExtensions: Set<String> = ["png", "jpg", "jpeg"]
+let vectorExtensions: Set<String> = ["pdf"]
+let imageExtensions = rastorExtensions.union(vectorExtensions)
+
 // Maximum size of PDF files
 let maxPdfSize: UInt64 = 10_000
 
@@ -80,9 +84,9 @@ for usingType in usingTypes {
     case .custom(let pattern):
         searchUsingRegexPatterns.append(pattern)
     case .swiftUI:
-        searchUsingRegexPatterns.append("Image.*\\(.*\"(\\w+)\"")
+        searchUsingRegexPatterns.append(#"Image.*\(.*"(.*)""#)
     case .uiKit:
-        searchUsingRegexPatterns.append("UImage.*\\(.*\named:*\"(\\w+)\"")
+        searchUsingRegexPatterns.append(#"UImage.*\(.*\named:*"(.*)""#)
     case .swiftGen(let enumName):
         searchUsingRegexPatterns.append(enumName + #"\.((?:\.*[A-Z]{1}[A-z]*[0-9]*)*)\s*((?:\.*[a-z]{1}[A-z]*[0-9]*))\.image"#)
     }
@@ -204,9 +208,28 @@ class ImageInfo {
         }
     }
     
+    private struct FolderContents: Decodable {
+        let properties: Properties?
+        struct Properties : Decodable {
+            let isNamespace: Bool
+            
+            enum CodingKeys: String, CodingKey {
+                case isNamespace = "provides-namespace"
+            }
+        }
+    }
+    
+    static func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
+        let contentsPath = imagesPath + "/" + folder + "/Contents.json"
+        guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
+            return nil
+        }
+        return try? JSONDecoder().decode(type, from: contentsData)
+    }
     
     static func processFound(path: String) {
         var isAsset = false
+        var folderName = ""
         let components = path.split(separator: "/")
         for (index, component) in components.enumerated() {
             if component.hasSuffix(assetExtension) {
@@ -217,9 +240,7 @@ class ImageInfo {
                 }
                 if component.hasSuffix(imagesetExtension) { // it is asset
                     let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    let contentsPath = components[0..<index + 1].joined(separator: "/") + "/Contents.json"
-                    if let contentsData = NSData(contentsOfFile: contentsPath) as? Data,
-                       let contents = try? JSONDecoder().decode(AssetContents.self, from: contentsData)
+                    if let contents = load(AssetContents.self, for: components[0..<index + 1].joined(separator: "/"))
                     {
                         //print(contents)
                         let fileName = (path as NSString).lastPathComponent
@@ -228,15 +249,23 @@ class ImageInfo {
                                 result = image.scale?.scale
                             }
                         }
-                        processFound(name: name, path: path, scale: scale)
+                        processFound(name: folderName + name, path: path, scale: scale)
                     } else {
                         printError(filePath: path, message: "Not readed scale information", isWarning: true)
                         
-                        processFound(name: name, path: path, scale: nil)
+                        processFound(name: folderName + name, path: path, scale: nil)
                     }
                     break
                 } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
                     return
+                } else {
+                    // It is folder, but way???
+                    if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/"))
+                    {
+                        if contents.properties?.isNamespace ?? false {
+                            folderName += component + "/"
+                        }
+                    }
                 }
             }
         }
@@ -408,7 +437,9 @@ let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options
 var foundedImages: [String: ImageInfo] = [:]
 
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
-    if imageFileName.hasSuffix(".pdf") || imageFileName.hasSuffix(".png") {
+    let fileExtension = (imageFileName as NSString).pathExtension
+    if imageExtensions.contains(fileExtension)
+    {
         
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
         
@@ -416,7 +447,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 
         let fileSize = fileSize(fromPath: imageFilePath)
 
-        if imageFileName.hasSuffix(".pdf") {
+        if vectorExtensions.contains(fileExtension) {
             if isCheckingFileSize, fileSize > maxPdfSize {
                 printError(
                     filePath: imageFilePath,
@@ -508,6 +539,15 @@ for imageInfo in images {
 
 if isCheckingDuplicatedByContent {
     for (index, imageInfo1) in images.enumerated() {
+//        let file1 = imageInfo1.files.first!
+//        let imageFilePath1 = "\(imagesPath)/\(file1.path)"
+//        print(imageFilePath1)
+//        if imageInfo1.hash.isEmpty{
+//            print("nil")
+//        } else {
+//            print(imageInfo1.hash)
+//        }
+        
         for i in index+1..<images.count {
             let imageInfo2 = images[i]
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash, imageInfo1.calculateData() == imageInfo2.calculateData() {
@@ -519,6 +559,10 @@ if isCheckingDuplicatedByContent {
             }
         }
     }
+}
+
+for image in images {
+    print(image.name)
 }
 
 print("Number of images: \(foundedImages.values.reduce(into: 0){ $0 += $1.files.count } )")
