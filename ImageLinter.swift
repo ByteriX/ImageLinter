@@ -79,6 +79,7 @@ let isCheckingDuplicatedByContent = true
 let startDate = Date()
 
 var searchUsingRegexPatterns: [String] = []
+var isSwiftGen = false
 for usingType in usingTypes {
     switch usingType {
     case .custom(let pattern):
@@ -89,6 +90,7 @@ for usingType in usingTypes {
         searchUsingRegexPatterns.append(#"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#)
     case .swiftGen(let enumName):
         searchUsingRegexPatterns.append(enumName + #"\.((?:\.*[A-Z]{1}[A-z]*[0-9]*)*)\s*((?:\.*[a-z]{1}[A-z]*[0-9]*))\.image"#)
+        isSwiftGen = true
     }
 }
 
@@ -127,41 +129,40 @@ func printError(filePath: String, message: String,
 }
 
 extension String {
-    
     var linesCount: Int {
-        return self.reduce(into: 1) { (count, letter) in
-             if letter == "\n" {      // This treats CRLF as one "letter", contrary to UnicodeScalars
+        return reduce(into: 1) { count, letter in
+            if letter == "\n" { // This treats CRLF as one "letter", contrary to UnicodeScalars
                 count += 1
-             }
+            }
         }
     }
-    
+
     var scale: Int? {
         guard (self as NSString).contains("x") else {
             return nil
         }
-        return Int(self.dropLast(1))
+        return Int(dropLast(1))
     }
-    
+
     func lowercasedFirstLetter() -> String {
-        return prefix(1).lowercased() + self.dropFirst()
+        return prefix(1).lowercased() + dropFirst()
     }
 }
 
 extension Array where Self.Element == String {
-    func swiftGen() -> Array<Self.Element> {
-        guard let last = self.last else {
+    func swiftGen() -> [Self.Element] {
+        guard let last = last else {
             return self
         }
-        var result : [Self.Element] = self.dropLast()
+        var result: [Self.Element] = dropLast()
         result.append(last.lowercasedFirstLetter())
         return result
     }
 }
 
-extension NSImage{
-    var pixelSize: NSSize?{
-        if let rep = self.representations.first{
+extension NSImage {
+    var pixelSize: NSSize? {
+        if let rep = representations.first {
             let size = NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
             return size
         }
@@ -172,7 +173,7 @@ extension NSImage{
 extension CGImage {
     var png: Data? {
         guard let mutableData = CFDataCreateMutable(nil, 0),
-            let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
+              let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
         CGImageDestinationAddImage(destination, self, nil)
         guard CGImageDestinationFinalize(destination) else { return nil }
         return mutableData as Data
@@ -212,12 +213,12 @@ class ImageInfo {
     
     init(name: String, path: String, scale: Int?) {
         self.name = name
-        self.files = [File(path: path, scale: scale)]
+        files = [File(path: path, scale: scale)]
     }
     
     private struct AssetContents: Decodable {
         let images: [Image]
-        struct Image : Decodable {
+        struct Image: Decodable {
             let filename: String?
             let scale: String?
         }
@@ -225,7 +226,7 @@ class ImageInfo {
     
     private struct FolderContents: Decodable {
         let properties: Properties?
-        struct Properties : Decodable {
+        struct Properties: Decodable {
             let isNamespace: Bool
             
             enum CodingKeys: String, CodingKey {
@@ -255,19 +256,17 @@ class ImageInfo {
                 }
                 if component.hasSuffix(imagesetExtension) { // it is asset
                     let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    if let contents = load(AssetContents.self, for: components[0..<index + 1].joined(separator: "/"))
-                    {
-                        //print(contents)
+                    if let contents = load(AssetContents.self, for: components[0..<index + 1].joined(separator: "/")) {
                         let fileName = (path as NSString).lastPathComponent
-                        let scale: Int? = contents.images.reduce(into: nil) { (result, image) in
+                        let scale: Int? = contents.images.reduce(into: nil) { result, image in
                             if image.filename == fileName {
                                 result = image.scale?.scale
                             }
                         }
                         processFound(name: folderName + name, path: path, scale: scale)
                     } else {
-                        printError(filePath: path, message: "Not readed scale information", isWarning: true)
-                        
+                        printError(filePath: path, message: "Not readed scale information. Found for image '\(name)'", isWarning: true)
+
                         processFound(name: folderName + name, path: path, scale: nil)
                     }
                     break
@@ -275,8 +274,7 @@ class ImageInfo {
                     return
                 } else {
                     // It is folder, but way???
-                    if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/"))
-                    {
+                    if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/")) {
                         if contents.properties?.isNamespace ?? false {
                             folderName += component + "/"
                         }
@@ -289,13 +287,13 @@ class ImageInfo {
             processFound(name: name.path, path: path, scale: name.scale)
         }
     }
-    
-    static private func processFound(name: String, path: String, scale: Int?) {
+
+    private static func processFound(name: String, path: String, scale: Int?) {
         var key = name
         if isSwiftGen {
             key = name
                 .split(separator: "/")
-                .map{String($0)}
+                .map { String($0) }
                 .swiftGen()
                 .joined(separator: ".")
         }
@@ -329,10 +327,10 @@ class ImageInfo {
     }
     
     var assetPath: String? {
-        var result: String? = nil
+        var result: String?
         for imageFile in files {
             let components = imageFile.path.split(separator: "/")
-            if components.count == 0 { // it just image
+            if components.isEmpty { // it just image
                 return nil
             } else {
                 for component in components {
@@ -352,9 +350,9 @@ class ImageInfo {
         }
         return result
     }
-    
-    func error(with message: String){
-        for file in self.files {
+
+    func error(with message: String) {
+        for file in files {
             let imageFilePath = "\(imagesPath)/\(file.path)"
             printError(filePath: imageFilePath, message: message)
         }
@@ -379,31 +377,40 @@ class ImageInfo {
     }
     
     func checkImageSize() {
-        var scaledSize: (width: Int, height: Int)? = nil
+        var scaledSize: (width: Int, height: Int)?
         for file in files {
             let imageFilePath = "\(imagesPath)/\(file.path)"
-            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize
-            {
+            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
-                if pixelSize.height == 0, pixelSize.width == 0{
+                if pixelSize.height == 0, pixelSize.width == 0 {
                     if size.height != 0, size.width != 0 {
                         // it's okey just vector image
                         // but can problems
                         if let scale = file.scale {
-                            printError(filePath: imageFilePath, message: "It is vector image. But it has scale = \(scale)", isWarning: true)
+                            printError(
+                                filePath: imageFilePath,
+                                message: "It is vector image. But it has scale = \(scale). Found for image '\(name)'",
+                                isWarning: true
+                            )
                         }
                     } else {
-                        printError(filePath: imageFilePath, message: "Image has zero size", isWarning: true)
+                        printError(filePath: imageFilePath, message: "Image has zero size. Found for image '\(name)'", isWarning: true)
                     }
                 } else {
                     if let scale = file.scale {
                         if Int(pixelSize.height) % scale != 0 || Int(pixelSize.width) % scale != 0 {
-                            printError(filePath: imageFilePath, message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale)")
+                            printError(
+                                filePath: imageFilePath,
+                                message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale). Found for image '\(name)'"
+                            )
                         } else {
                             let newScaledSize = (Int(pixelSize.width) / scale, Int(pixelSize.height) / scale)
                             if let scaledSize = scaledSize {
                                 if scaledSize != newScaledSize {
-                                    printError(filePath: imageFilePath, message: "Image has different size for scaled group. Real size is \(pixelSize) with scale = \(scale) but expected \(NSSize(width: scaledSize.0 * scale, height:scaledSize.1 * scale))")
+                                    printError(
+                                        filePath: imageFilePath,
+                                        message: "Image has different size for scaled group. Real size is \(pixelSize) with scale = \(scale) but expected \(NSSize(width: scaledSize.0 * scale, height: scaledSize.1 * scale)). Found for image '\(name)'"
+                                    )
                                 }
                             } else {
                                 scaledSize = newScaledSize
@@ -412,20 +419,19 @@ class ImageInfo {
                     }
                 }
             } else {
-                printError(filePath: imageFilePath, message: "That is not image", isWarning: true)
+                printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
         }
     }
-    
+
     func calculateData() -> Data? {
         var maxScale = 0
-        var result: Data? = nil
+        var result: Data?
         for file in files {
             let imageFilePath = "\(imagesPath)/\(file.path)"
-            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize
-            {
+            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
-                if pixelSize.height == 0, pixelSize.width == 0{
+                if pixelSize.height == 0, pixelSize.width == 0 {
                     if size.height != 0, size.width != 0 {
                         // it's okey just vector image
                         var imageRect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
@@ -439,7 +445,12 @@ class ImageInfo {
                     if let scale = file.scale {
                         // calculate hash
                         if maxScale < scale {
-                            var imageRect = CGRect(x: 0, y: 0, width: Int(pixelSize.width) / scale, height: Int(pixelSize.height) / scale)
+                            var imageRect = CGRect(
+                                x: 0,
+                                y: 0,
+                                width: Int(pixelSize.width) / scale,
+                                height: Int(pixelSize.height) / scale
+                            )
                             let cgImage = image.cgImage(forProposedRect: &imageRect, context: nil, hints: nil)
                             if let data = cgImage?.png {
                                 result = data
@@ -461,11 +472,10 @@ var foundedImages: [String: ImageInfo] = [:]
 
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
     let fileExtension = (imageFileName as NSString).pathExtension
-    if imageExtensions.contains(fileExtension)
-    {
-        
+    if imageExtensions.contains(fileExtension) {
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
-        
+
+        //TODO: It can return Image and we can add to error image.name
         ImageInfo.processFound(path: imageFileName)
 
         let fileSize = fileSize(fromPath: imageFilePath)
@@ -525,6 +535,7 @@ for regexPattern in searchUsingRegexPatterns {
         }
     }
 }
+
 func addUsedImage(from string: String, result: NSTextCheckingResult?, path: String) {
     guard let result = result, result.numberOfRanges > 0 else {
         return
@@ -544,11 +555,11 @@ func addUsedImage(from string: String, result: NSTextCheckingResult?, path: Stri
 let unusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(ignoredUnusedImages)
 for unusedImage in unusedImages {
     if let imageInfo = foundedImages[unusedImage] {
-        imageInfo.error(with: "File unused from code.")
+        imageInfo.error(with: "File unused from code. Found for image '\(imageInfo.name)'")
     }
 }
 
-let images: [ImageInfo] = foundedImages.values.map{ $0 }
+let images: [ImageInfo] = foundedImages.values.map { $0 }
 for imageInfo in images {
     if isCheckingDuplicatedByName {
         imageInfo.checkDuplicateByName()
@@ -573,25 +584,22 @@ if isCheckingDuplicatedByContent {
 //        } else {
 //            print(imageInfo1.hash)
 //        }
-        
-        for i in index+1..<images.count {
+
+        for i in index + 1..<images.count {
             let imageInfo2 = images[i]
-            if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash, imageInfo1.calculateData() == imageInfo2.calculateData() {
+            if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
+               imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
                 let imageFilePath1 = "\(imagesPath)/\(file1.path)"
                 let file2 = imageInfo2.files.first!
                 let imageFilePath2 = "\(imagesPath)/\(file2.path)"
-                printError(filePath: imageFilePath1, message: "Duplicate by content with '\(imageFilePath2)'")
+                printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }
     }
 }
 
-for image in images {
-    print(image.name)
-}
-
-print("Number of images: \(foundedImages.values.reduce(into: 0){ $0 += $1.files.count } )")
+print("Number of images: \(foundedImages.values.reduce(into: 0) { $0 += $1.files.count })")
 print("Number of warnings: \(warningsCount)")
 print("Number of errors: \(errorsCount)")
 print("Time: \(Date().timeIntervalSince(startDate)) sec.")
