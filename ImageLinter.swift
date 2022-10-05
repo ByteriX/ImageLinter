@@ -84,9 +84,9 @@ for usingType in usingTypes {
     case .custom(let pattern):
         searchUsingRegexPatterns.append(pattern)
     case .swiftUI:
-        searchUsingRegexPatterns.append(#"Image.*\(.*"(.*)""#)
+        searchUsingRegexPatterns.append(#"\bImage\(\s*"(.*)"\s*\)"#)
     case .uiKit:
-        searchUsingRegexPatterns.append(#"UImage.*\(.*\named:*"(.*)""#)
+        searchUsingRegexPatterns.append(#"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#)
     case .swiftGen(let enumName):
         searchUsingRegexPatterns.append(enumName + #"\.((?:\.*[A-Z]{1}[A-z]*[0-9]*)*)\s*((?:\.*[a-z]{1}[A-z]*[0-9]*))\.image"#)
     }
@@ -480,10 +480,13 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 // MARK: - detect unused Images
 
 let sourcePath = FileManager.default.currentDirectoryPath + relativeSourcePath
-let swiftFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
 var usedImages: [String] = []
 for regexPattern in searchUsingRegexPatterns {
     let regex = try? NSRegularExpression(pattern: regexPattern, options: [])
+    if regex == nil {
+        printError(filePath: #file, message: "Not right pattern for regex: \(regexPattern)", line: #line)
+    }
+    let swiftFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
     while let sourceFileName = swiftFileEnumerator?.nextObject() as? String {
         // checks the extension
         if sourceFileName.hasSuffix(".swift") || sourceFileName.hasSuffix(".m") || sourceFileName.hasSuffix(".mm") {
