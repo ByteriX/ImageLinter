@@ -243,7 +243,7 @@ class ImageInfo {
         return try? JSONDecoder().decode(type, from: contentsData)
     }
     
-    static func processFound(path: String) {
+    static func processFound(path: String) -> ImageInfo? {
         var isAsset = false
         var folderName = ""
         let components = path.split(separator: "/")
@@ -263,15 +263,15 @@ class ImageInfo {
                                 result = image.scale?.scale
                             }
                         }
-                        processFound(name: folderName + name, path: path, scale: scale)
+                        return processFound(name: folderName + name, path: path, scale: scale)
                     } else {
                         printError(filePath: path, message: "Not readed scale information. Found for image '\(name)'", isWarning: true)
 
-                        processFound(name: folderName + name, path: path, scale: nil)
+                        return processFound(name: folderName + name, path: path, scale: nil)
                     }
-                    break
+                    //break
                 } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
-                    return
+                    return nil
                 } else {
                     // It is folder, but way???
                     if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/")) {
@@ -284,11 +284,12 @@ class ImageInfo {
         }
         if !isAsset {
             let name = nameOfImageFile(path: path)
-            processFound(name: name.path, path: path, scale: name.scale)
+            return processFound(name: name.path, path: path, scale: name.scale)
         }
+        return nil
     }
 
-    private static func processFound(name: String, path: String, scale: Int?) {
+    private static func processFound(name: String, path: String, scale: Int?) -> ImageInfo {
         var key = name
         if isSwiftGen {
             key = name
@@ -299,8 +300,11 @@ class ImageInfo {
         }
         if let existImage = foundedImages[key] {
             existImage.files.append(File(path: path, scale: scale))
+            return existImage
         } else {
-            foundedImages[key] = ImageInfo(name: key, path: path, scale: scale)
+            let result = ImageInfo(name: key, path: path, scale: scale)
+            foundedImages[key] = result
+            return result
         }
     }
     
@@ -475,36 +479,36 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
     if imageExtensions.contains(fileExtension) {
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
 
-        //TODO: It can return Image and we can add to error image.name
-        ImageInfo.processFound(path: imageFileName)
-
-        let fileSize = fileSize(fromPath: imageFilePath)
-
-        if vectorExtensions.contains(fileExtension) {
-            if isCheckingFileSize, fileSize > maxPdfSize {
-                printError(
-                    filePath: imageFilePath,
-                    message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize))."
-                )
-            }
-
-            if isCheckingPdfVector {
-                if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
-                    let range = NSRange(location: 0, length: string.count)
-                    if pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                        printError(filePath: imageFilePath, message: "PDF File is not vector")
-                    }
-                } else {
-                    printError(filePath: imageFilePath, message: "Can not parse PDF File")
-                }
-            }
+        if let imageInfo = ImageInfo.processFound(path: imageFileName){
             
-        } else if imageFileName.hasSuffix(".png") {
-            if isCheckingFileSize, fileSize > maxPngSize {
-                printError(
-                    filePath: imageFilePath,
-                    message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize))."
-                )
+            let fileSize = fileSize(fromPath: imageFilePath)
+            
+            if vectorExtensions.contains(fileExtension) {
+                if isCheckingFileSize, fileSize > maxPdfSize {
+                    printError(
+                        filePath: imageFilePath,
+                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize)). Found for image '\(imageInfo.name)'"
+                    )
+                }
+                
+                if isCheckingPdfVector {
+                    if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
+                        let range = NSRange(location: 0, length: string.count)
+                        if pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                            printError(filePath: imageFilePath, message: "PDF File is not vector. Found for image '\(imageInfo.name)'")
+                        }
+                    } else {
+                        printError(filePath: imageFilePath, message: "Can not parse PDF File. Found for image '\(imageInfo.name)'")
+                    }
+                }
+                
+            } else if imageFileName.hasSuffix(".png") {
+                if isCheckingFileSize, fileSize > maxPngSize {
+                    printError(
+                        filePath: imageFilePath,
+                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize)). Found for image '\(imageInfo.name)'"
+                    )
+                }
             }
         }
     }
