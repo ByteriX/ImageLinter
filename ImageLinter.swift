@@ -89,7 +89,9 @@ for usingType in usingTypes {
     case .uiKit:
         searchUsingRegexPatterns.append(#"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#)
     case .swiftGen(let enumName):
-        searchUsingRegexPatterns.append(enumName + #"\.((?:\.*[A-Z]{1}[A-z]*[0-9]*)*)\s*((?:\.*[a-z]{1}[A-z]*[0-9]*))\.image"#)
+        searchUsingRegexPatterns
+            .append(enumName +
+                #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage)"#)
         isSwiftGen = true
     }
 }
