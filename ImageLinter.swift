@@ -142,6 +142,21 @@ extension String {
         }
         return Int(self.dropLast(1))
     }
+    
+    func lowercasedFirstLetter() -> String {
+        return prefix(1).lowercased() + self.dropFirst()
+    }
+}
+
+extension Array where Self.Element == String {
+    func swiftGen() -> Array<Self.Element> {
+        guard let last = self.last else {
+            return self
+        }
+        var result : [Self.Element] = self.dropLast()
+        result.append(last.lowercasedFirstLetter())
+        return result
+    }
 }
 
 extension NSImage{
@@ -276,10 +291,18 @@ class ImageInfo {
     }
     
     static private func processFound(name: String, path: String, scale: Int?) {
-        if let existImage = foundedImages[name] {
+        var key = name
+        if isSwiftGen {
+            key = name
+                .split(separator: "/")
+                .map{String($0)}
+                .swiftGen()
+                .joined(separator: ".")
+        }
+        if let existImage = foundedImages[key] {
             existImage.files.append(File(path: path, scale: scale))
         } else {
-            foundedImages[name] = ImageInfo(name: name, path: path, scale: scale)
+            foundedImages[key] = ImageInfo(name: key, path: path, scale: scale)
         }
     }
     
