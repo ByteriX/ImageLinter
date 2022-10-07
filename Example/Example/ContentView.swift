@@ -44,6 +44,7 @@ struct ContentView: View {
         Image("DuplicatedImage2")
         Image("Folder/DuplicatedImage3")
         Image("DuplicatedImage4")
+        Image("NotFoundFile")
     }
     
     

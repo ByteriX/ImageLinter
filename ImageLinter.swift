@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.2.2
+ version 1.2.3
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
@@ -18,6 +18,7 @@ import AppKit
  5. Comparing scaled images size
  6. Checking duplicate images by name
  7. Checking duplicate images by content (but identical)
+ 8. Search empty and broken asset images
 
  Using from build phase:
  ${SRCROOT}/Scripts/ImageLinter.swift
@@ -197,6 +198,33 @@ func covertToString(fileSize: UInt64) -> String {
     ByteCountFormatter().string(fromByteCount: Int64(fileSize))
 }
 
+private struct AssetContents: Decodable {
+    let images: [Image]
+    struct Image: Decodable {
+        let filename: String?
+        let scale: String?
+    }
+}
+
+private struct FolderContents: Decodable {
+    let properties: Properties?
+    struct Properties: Decodable {
+        let isNamespace: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case isNamespace = "provides-namespace"
+        }
+    }
+}
+
+func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
+    let contentsPath = imagesPath + "/" + folder + "/Contents.json"
+    guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
+        return nil
+    }
+    return try? JSONDecoder().decode(type, from: contentsData)
+}
+
 let imagesetExtension = ".imageset"
 let appIconExtension = ".appiconset"
 let assetExtension = ".xcassets"
@@ -216,33 +244,6 @@ class ImageInfo {
     init(name: String, path: String, scale: Int?) {
         self.name = name
         files = [File(path: path, scale: scale)]
-    }
-    
-    private struct AssetContents: Decodable {
-        let images: [Image]
-        struct Image: Decodable {
-            let filename: String?
-            let scale: String?
-        }
-    }
-    
-    private struct FolderContents: Decodable {
-        let properties: Properties?
-        struct Properties: Decodable {
-            let isNamespace: Bool
-            
-            enum CodingKeys: String, CodingKey {
-                case isNamespace = "provides-namespace"
-            }
-        }
-    }
-    
-    static func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
-        let contentsPath = imagesPath + "/" + folder + "/Contents.json"
-        guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
-            return nil
-        }
-        return try? JSONDecoder().decode(type, from: contentsData)
     }
     
     static func processFound(path: String) -> ImageInfo? {
@@ -386,7 +387,8 @@ class ImageInfo {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
             let imageFilePath = "\(imagesPath)/\(file.path)"
-            if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
+            if let image = NSImage(contentsOfFile: imageFilePath) {
+                let pixelSize = image.pixelSize ?? NSSize()
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {
                     if size.height != 0, size.width != 0 {
@@ -513,6 +515,26 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
                 }
             }
         }
+    } else if imageFileName.hasSuffix(imagesetExtension) {
+        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
+        var files: Set<String> = []
+        while let fileName = fileEnumerator?.nextObject() as? String {
+            files.insert(fileName)
+        }
+        let name = ((imageFileName as NSString).lastPathComponent as NSString).deletingPathExtension
+        if let content = load(AssetContents.self, for: imageFileName) {
+            let contentFileNames = Set<String>(content.images.compactMap { $0.filename })
+            if contentFileNames.isEmpty {
+                printError(filePath: imageFileName, message: "Empty asset with name '\(name)'")
+            }
+            let notFoundFile = contentFileNames.subtracting(files)
+            for file in notFoundFile {
+                printError(filePath: imageFileName, message: "Not found file '\(file)' for Asset with name '\(name)'")
+            }
+        } else {
+            printError(filePath: imageFileName, message: "Empty folder for Asset with name '\(name)'")
+        }
     }
 }
 
@@ -582,15 +604,6 @@ for imageInfo in images {
 
 if isCheckingDuplicatedByContent {
     for (index, imageInfo1) in images.enumerated() {
-//        let file1 = imageInfo1.files.first!
-//        let imageFilePath1 = "\(imagesPath)/\(file1.path)"
-//        print(imageFilePath1)
-//        if imageInfo1.hash.isEmpty{
-//            print("nil")
-//        } else {
-//            print(imageInfo1.hash)
-//        }
-
         for i in index + 1..<images.count {
             let imageInfo2 = images[i]
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
