@@ -13,6 +13,8 @@ Check image files and resources for Swift
  7. Checking duplicate images by content (but identical)
  8. Search empty and broken asset images
 
+![](Screens/1.png)
+
 ## Accessibility
 
 1. Support Assets and files with @Xx notation
@@ -29,6 +31,7 @@ Check image files and resources for Swift
 ```bash
 ${SRCROOT}/ImageLinter.swift
 ```
+![](Screens/2.png)
 
 ## Setup:
 
