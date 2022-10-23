@@ -10,8 +10,8 @@ import AppKit
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
 
- Script can:
- 1. Checking size of PDF and PNG files
+ Script allows:
+ 1. Checking size of vector(PDF) and rastor(PNG/JPEG) files
  2. Catch raster from PDF
  3. Checking unused image files
  4. Search undefined images
