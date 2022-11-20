@@ -63,11 +63,11 @@ let rastorExtensions: Set<String> = ["png", "jpg", "jpeg"]
 let vectorExtensions: Set<String> = ["pdf"]
 let imageExtensions = rastorExtensions.union(vectorExtensions)
 
-// Maximum size of PDF files
-let maxPdfSize: UInt64 = 10_000
+// Maximum size of Vector files
+let maxVectorFileSize: UInt64 = 10_000
 
-// Maximum size of PNG files
-let maxPngSize: UInt64 = 100_000
+// Maximum size of Rastor files
+let maxRastorFileSize: UInt64 = 100_000
 
 let isCheckingFileSize = true
 let isCheckingPdfVector = true
@@ -488,10 +488,10 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
             let fileSize = fileSize(fromPath: imageFilePath)
             
             if vectorExtensions.contains(fileExtension) {
-                if isCheckingFileSize, fileSize > maxPdfSize {
+                if isCheckingFileSize, fileSize > maxVectorFileSize {
                     printError(
                         filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPdfSize)). Found for image '\(imageInfo.name)'"
+                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxVectorFileSize)). Found for image '\(imageInfo.name)'"
                     )
                 }
                 
@@ -506,11 +506,11 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
                     }
                 }
                 
-            } else if imageFileName.hasSuffix(".png") {
-                if isCheckingFileSize, fileSize > maxPngSize {
+            } else if rastorExtensions.contains(fileExtension) {
+                if isCheckingFileSize, fileSize > maxRastorFileSize {
                     printError(
                         filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxPngSize)). Found for image '\(imageInfo.name)'"
+                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: maxRastorFileSize)). Found for image '\(imageInfo.name)'"
                     )
                 }
             }
