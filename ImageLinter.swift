@@ -11,7 +11,7 @@ import AppKit
  Copyright (c) 2022 ByteriX. All rights reserved.
 
  Script allows:
- 1. Checking size of vector(PDF) and rastor(PNG/JPEG) files
+ 1. Checking size (file and image) of vector(PDF) and rastor(PNG/JPEG) files
  2. Catch raster from PDF
  3. Checking unused image files
  4. Search undefined images
@@ -238,10 +238,31 @@ class ImageInfo {
         let scale: Int?
     }
     
+    enum ImageType {
+        case undefined
+        case vector
+        case rastor
+        case mixed
+    }
+    
     let name: String
     var files: [File]
     
     var hash: String = ""
+    
+    var type: ImageType = .undefined
+    
+    func setAndCheckType(newType: ImageType, filePath: String){
+        if type != .undefined, newType != type {
+            printError(
+                filePath: filePath,
+                message: "The image with name '\(name)' has different types of files: \(newType) and \(type)"
+            )
+            type = .mixed
+        } else {
+            type = newType
+        }
+    }
     
     init(name: String, path: String, scale: Int?) {
         self.name = name
@@ -385,7 +406,7 @@ class ImageInfo {
         }
     }
     
-    func checkImageSize() {
+    func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
             let imageFilePath = "\(imagesPath)/\(file.path)"
@@ -394,6 +415,7 @@ class ImageInfo {
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {
                     if size.height != 0, size.width != 0 {
+                        setAndCheckType(newType: .vector, filePath: imageFilePath)
                         // it's okey just vector image
                         // but can problems
                         if let scale = file.scale {
@@ -414,6 +436,7 @@ class ImageInfo {
                     }
                 } else {
                     if let scale = file.scale {
+                        setAndCheckType(newType: .rastor, filePath: imageFilePath)
                         if Int(pixelSize.width) % scale != 0 || Int(pixelSize.height) % scale != 0 {
                             printError(
                                 filePath: imageFilePath,
@@ -443,6 +466,13 @@ class ImageInfo {
             } else {
                 printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
+        }
+        if type == .vector, files.count > 1 {
+            printError(
+                filePath: files.first?.path ?? "",
+                message: "The vector image with name '\(name)' has \(files.count) files",
+                isWarning: true
+            )
         }
     }
 
@@ -607,7 +637,7 @@ for imageInfo in images {
         imageInfo.checkDuplicateByName()
     }
     if isCheckingScaleSize {
-        imageInfo.checkImageSize()
+        imageInfo.checkImageSizeAndDetectType()
     }
     if isCheckingDuplicatedByContent {
         if let data = imageInfo.calculateData() {

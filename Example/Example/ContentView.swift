@@ -11,6 +11,8 @@ struct ContentView: View {
     var body: some View {
         VStack {
             images1()
+            //images2()
+            //images3()
         }
         .padding()
     }
@@ -51,6 +53,8 @@ struct ContentView: View {
     func images3() -> some View {
         Image("BigRastor")
         Image("BigVector")
+        Image("MixedBookmark")
+        Image("TwoVectors")
     }
     
     
