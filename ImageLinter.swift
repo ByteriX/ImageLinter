@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.3
+ version 1.3.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
@@ -60,7 +60,7 @@ let ignoredUndefinedImages: Set<String> = [
 ]
 
 let rastorExtensions: Set<String> = ["png", "jpg", "jpeg"]
-let vectorExtensions: Set<String> = ["pdf"]
+let vectorExtensions: Set<String> = ["pdf", "svg"]
 let imageExtensions = rastorExtensions.union(vectorExtensions)
 
 // Maximum size of Vector files
@@ -465,7 +465,14 @@ class ImageInfo {
                 }
             } else if imageFilePath.hasSuffix("svg") {
                 setAndCheckType(newType: .vector, filePath: imageFilePath)
-                // But we can not check as vector, SVG files not support without Assets
+                // But we can not check as vector, SVG files not support without Assets as size
+                if let scale = file.scale {
+                    printError(
+                        filePath: imageFilePath,
+                        message: "It is vector image. But it has scale = \(scale). Found for image '\(name)'",
+                        isWarning: true
+                    )
+                }
             } else {
                 printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
