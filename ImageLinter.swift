@@ -64,10 +64,12 @@ let vectorExtensions: Set<String> = ["pdf"]
 let imageExtensions = rastorExtensions.union(vectorExtensions)
 
 // Maximum size of Vector files
-let maxVectorFileSize: UInt64 = 10_000
+let maxVectorFileSize: UInt64 = 20_000
+let maxVectorImageSize: CGSize = CGSize(width: 100, height: 100)
 
 // Maximum size of Rastor files
-let maxRastorFileSize: UInt64 = 100_000
+let maxRastorFileSize: UInt64 = 200_000
+let maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
 
 let isCheckingFileSize = true
 let isCheckingPdfVector = true
@@ -401,18 +403,24 @@ class ImageInfo {
                                 isWarning: true
                             )
                         }
+                        if size.width > maxVectorImageSize.width || size.height > maxVectorImageSize.height {
+                            printError(
+                                filePath: imageFilePath,
+                                message: "The vector image has very biggest image size (\(size.width), \(size.height)). Max image size for vector is (\(maxVectorImageSize.width), \(maxVectorImageSize.height)). Found for image '\(name)'"
+                            )
+                        }
                     } else {
                         printError(filePath: imageFilePath, message: "Image has zero size. Found for image '\(name)'", isWarning: true)
                     }
                 } else {
                     if let scale = file.scale {
-                        if Int(pixelSize.height) % scale != 0 || Int(pixelSize.width) % scale != 0 {
+                        if Int(pixelSize.width) % scale != 0 || Int(pixelSize.height) % scale != 0 {
                             printError(
                                 filePath: imageFilePath,
                                 message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale). Found for image '\(name)'"
                             )
                         } else {
-                            let newScaledSize = (Int(pixelSize.width) / scale, Int(pixelSize.height) / scale)
+                            let newScaledSize: (width: Int, height: Int) = (Int(pixelSize.width) / scale, Int(pixelSize.height) / scale)
                             if let scaledSize = scaledSize {
                                 if scaledSize != newScaledSize {
                                     printError(
@@ -422,6 +430,12 @@ class ImageInfo {
                                 }
                             } else {
                                 scaledSize = newScaledSize
+                            }
+                            if CGFloat(newScaledSize.width) > maxRastorImageSize.width || CGFloat(newScaledSize.height) > maxRastorImageSize.height{
+                                printError(
+                                    filePath: imageFilePath,
+                                    message: "The rastor image has very biggest image size (\(newScaledSize.width), \(newScaledSize.height)). Max image size for rastor is (\(maxRastorImageSize.width), \(maxRastorImageSize.height)). Found for image '\(name)'"
+                                )
                             }
                         }
                     }

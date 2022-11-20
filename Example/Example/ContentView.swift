@@ -47,6 +47,12 @@ struct ContentView: View {
         Image("NotFoundFile")
     }
     
+    @ViewBuilder
+    func images3() -> some View {
+        Image("BigRastor")
+        Image("BigVector")
+    }
+    
     
 }
 
