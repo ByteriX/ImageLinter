@@ -32,6 +32,7 @@ struct ContentView: View {
         }
         
         Image("NotFoundImage")
+        Image("checkSVG")
     }
     
     @ViewBuilder

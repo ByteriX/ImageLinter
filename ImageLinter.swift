@@ -463,6 +463,9 @@ class ImageInfo {
                         }
                     }
                 }
+            } else if imageFilePath.hasSuffix("svg") {
+                setAndCheckType(newType: .vector, filePath: imageFilePath)
+                // But we can not check as vector, SVG files not support without Assets
             } else {
                 printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
