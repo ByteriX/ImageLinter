@@ -5,14 +5,14 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.3.1
+ version 1.4
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022 ByteriX. All rights reserved.
 
  Script allows:
  1. Checking size (file and image) of vector(PDF) and rastor(PNG/JPEG) files
- 2. Catch raster from PDF
+ 2. Catch raster from PDF or SVG
  3. Checking unused image files
  4. Search undefined images
  5. Comparing scaled images size
@@ -59,9 +59,11 @@ let ignoredUnusedImages: Set<String> = [
 let ignoredUndefinedImages: Set<String> = [
 ]
 
-let rastorExtensions: Set<String> = ["png", "jpg", "jpeg"]
-let vectorExtensions: Set<String> = ["pdf", "svg"]
-let imageExtensions = rastorExtensions.union(vectorExtensions)
+let rastorExtensions = ["png", "jpg", "jpeg"]
+let vectorExtensions = ["pdf", "svg"]
+let rastorSetExtensions = Set<String>(rastorExtensions.map{$0.uppercased()})
+let vectorSetExtensions = Set<String>(vectorExtensions.map{$0.uppercased()})
+let imageSetExtensions = rastorSetExtensions.union(vectorSetExtensions)
 
 // Maximum size of Vector files
 let maxVectorFileSize: UInt64 = 20_000
@@ -73,6 +75,7 @@ let maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
 
 let isCheckingFileSize = true
 let isCheckingPdfVector = true
+let isCheckingSvgVector = true
 let isCheckingScaleSize = true
 let isCheckingDuplicatedByName = true
 let isCheckingDuplicatedByContent = true
@@ -463,9 +466,8 @@ class ImageInfo {
                         }
                     }
                 }
-            } else if imageFilePath.hasSuffix("svg") {
+            } else if imageFilePath.uppercased().hasSuffix("SVG") { // NSImage can not support SVG files. You can use only from Assets
                 setAndCheckType(newType: .vector, filePath: imageFilePath)
-                // But we can not check as vector, SVG files not support without Assets as size
                 if let scale = file.scale {
                     printError(
                         filePath: imageFilePath,
@@ -473,6 +475,10 @@ class ImageInfo {
                         isWarning: true
                     )
                 }
+                // Need parse SVG and extract width / height for checking
+                // examples:
+                // vector: <svg width="37pt" height="37pt" viewBox="0 0 37 37" >
+                // rastor: <svg width="50" height="50" viewBox="636,559,50,50">
             } else {
                 printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
@@ -530,18 +536,20 @@ class ImageInfo {
 let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
 let pdfRasterPattern = #".*\/[Ii]mage.*"#
 let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
+let svgRasterPattern = #".*<image .*"#
+let svgRasterRegex = try? NSRegularExpression(pattern: svgRasterPattern, options: [])
 var foundedImages: [String: ImageInfo] = [:]
 
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
-    let fileExtension = (imageFileName as NSString).pathExtension
-    if imageExtensions.contains(fileExtension) {
+    let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
+    if imageSetExtensions.contains(fileExtension) {
         let imageFilePath = "\(imagesPath)/\(imageFileName)"
 
         if let imageInfo = ImageInfo.processFound(path: imageFileName){
             
             let fileSize = fileSize(fromPath: imageFilePath)
             
-            if vectorExtensions.contains(fileExtension) {
+            if vectorSetExtensions.contains(fileExtension) {
                 if isCheckingFileSize, fileSize > maxVectorFileSize {
                     printError(
                         filePath: imageFilePath,
@@ -549,18 +557,20 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
                     )
                 }
                 
-                if isCheckingPdfVector {
+                if isCheckingPdfVector || isCheckingSvgVector {
                     if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
                         let range = NSRange(location: 0, length: string.count)
-                        if pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                        if isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
                             printError(filePath: imageFilePath, message: "PDF File is not vector. Found for image '\(imageInfo.name)'")
                         }
+                        if isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                            printError(filePath: imageFilePath, message: "SVG File is not vector. Found for image '\(imageInfo.name)'")
+                        }
                     } else {
-                        printError(filePath: imageFilePath, message: "Can not parse PDF File. Found for image '\(imageInfo.name)'")
+                        printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)'")
                     }
                 }
-                
-            } else if rastorExtensions.contains(fileExtension) {
+            } else if rastorSetExtensions.contains(fileExtension) {
                 if isCheckingFileSize, fileSize > maxRastorFileSize {
                     printError(
                         filePath: imageFilePath,

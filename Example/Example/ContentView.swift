@@ -56,6 +56,7 @@ struct ContentView: View {
         Image("BigVector")
         Image("MixedBookmark")
         Image("TwoVectors")
+        Image("FalseSVG")
     }
     
     
