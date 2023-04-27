@@ -43,7 +43,7 @@ enum UsingType {
 
 /// yuo can use many types
 let usingTypes: [UsingType] = [
-    .swiftUI, .uiKit
+    .swiftGen(), .swiftUI, .uiKit
 ]
 
 /**
@@ -74,6 +74,7 @@ let maxRastorFileSize: UInt64 = 200_000
 let maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
 
 let isCheckingFileSize = true
+let isCheckingImageSize = true
 let isCheckingPdfVector = true
 let isCheckingSvgVector = true
 let isCheckingScaleSize = true
@@ -409,6 +410,9 @@ class ImageInfo {
         }
     }
     
+    static let svgSearchWidthHeightRegex = try! NSRegularExpression(pattern: #"<svg.*width="(.*?)p?t?".*height="(.*?)p?t?".*>"#, options: [])
+    static let svgSearchHeightWidthRegex = try! NSRegularExpression(pattern: #"<svg.*height="(.*?)p?t?".*width="(.*?)p?t?".*>"#, options: [])
+    
     func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
@@ -475,10 +479,26 @@ class ImageInfo {
                         isWarning: true
                     )
                 }
+
                 // Need parse SVG and extract width / height for checking
                 // examples:
                 // vector: <svg width="37pt" height="37pt" viewBox="0 0 37 37" >
                 // rastor: <svg width="50" height="50" viewBox="636,559,50,50">
+                if isCheckingImageSize {
+                    if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
+                        let range = NSRange(location: 0, length: string.count)
+                        
+                        if let result = Self.svgSearchWidthHeightRegex.firstMatch(in: string, options: [], range: range) {
+                            print("VALUE!!!")
+                            (1...result.numberOfRanges - 1).map { index in
+                                let value = (string as NSString).substring(with: result.range(at: index))
+                                print("VALUE=\(value)")
+                            }
+                        }
+                    } else {
+                        printError(filePath: imageFilePath, message: "Can not parse SVG file. Found for image '\(name)'")
+                    }
+                }
             } else {
                 printError(filePath: imageFilePath, message: "That is not image. Found for image '\(name)'", isWarning: true)
             }
@@ -538,6 +558,7 @@ let pdfRasterPattern = #".*\/[Ii]mage.*"#
 let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
 let svgRasterPattern = #".*<image .*"#
 let svgRasterRegex = try? NSRegularExpression(pattern: svgRasterPattern, options: [])
+
 var foundedImages: [String: ImageInfo] = [:]
 
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {

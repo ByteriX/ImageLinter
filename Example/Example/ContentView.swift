@@ -10,56 +10,19 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         VStack {
-            images1()
-            //images2()
-            //images3()
+            Image("TruePng")
+                .imageScale(.large)
+                .foregroundColor(.accentColor)
+            Image("TruePdf")
+            
+            if let image = UIImage(named: "FalsePdf") {
+                Image(uiImage: image)
+            }
+
+            Image("checkSVG")
         }
         .padding()
     }
-    
-    @ViewBuilder
-    func images1() -> some View {
-        Image("TruePng")
-            .imageScale(.large)
-            .foregroundColor(.accentColor)
-        Image("TruePng")
-        Image("TruePdf")
-        Image("FalsePdf")
-        Image("Duplicate")
-        
-        if let image = UIImage(named: "NotDuplicated") {
-            Image(uiImage: image)
-        }
-        
-        Image("NotFoundImage")
-        Image("checkSVG")
-    }
-    
-    @ViewBuilder
-    func images2() -> some View {
-        
-        Image("MixedUp1")
-        Image("MixedUp2")
-        Image("MixedUp3")
-        Image("BadRaster")
-        
-        Image("DuplicatedImage1")
-        Image("DuplicatedImage2")
-        Image("Folder/DuplicatedImage3")
-        Image("DuplicatedImage4")
-        Image("NotFoundFile")
-    }
-    
-    @ViewBuilder
-    func images3() -> some View {
-        Image("BigRastor")
-        Image("BigVector")
-        Image("MixedBookmark")
-        Image("TwoVectors")
-        Image("FalseSVG")
-    }
-    
-    
 }
 
 struct ContentView_Previews: PreviewProvider {

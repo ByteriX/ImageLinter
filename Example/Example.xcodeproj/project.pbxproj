@@ -17,6 +17,7 @@
 		C3F03CE428E6E806004CFE58 /* MixedUp3.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE128E6E806004CFE58 /* MixedUp3.png */; };
 		C3F03CE528E6E806004CFE58 /* MixedUp3@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */; };
 		C3F03CE628E6E806004CFE58 /* MixedUp3@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */; };
+		C3F5F650292CAE5D005F9700 /* Assets+Generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F5F64F292CAE5D005F9700 /* Assets+Generated.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		C3F03CE128E6E806004CFE58 /* MixedUp3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = MixedUp3.png; sourceTree = "<group>"; };
 		C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@2x.png"; sourceTree = "<group>"; };
 		C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@3x.png"; sourceTree = "<group>"; };
+		C3F5F64F292CAE5D005F9700 /* Assets+Generated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Assets+Generated.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +67,7 @@
 		C3F03CC728E37B90004CFE58 /* Example */ = {
 			isa = PBXGroup;
 			children = (
+				C3F5F64E292CAE5D005F9700 /* Generated */,
 				C3F03CC828E37B90004CFE58 /* ExampleApp.swift */,
 				C3F03CCA28E37B90004CFE58 /* ContentView.swift */,
 				C3F03CCC28E37B92004CFE58 /* Assets.xcassets */,
@@ -85,6 +88,14 @@
 				C3F03CCF28E37B92004CFE58 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		C3F5F64E292CAE5D005F9700 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				C3F5F64F292CAE5D005F9700 /* Assets+Generated.swift */,
+			);
+			path = Generated;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -188,6 +199,7 @@
 			files = (
 				C3F03CCB28E37B90004CFE58 /* ContentView.swift in Sources */,
 				C3F03CC928E37B90004CFE58 /* ExampleApp.swift in Sources */,
+				C3F5F650292CAE5D005F9700 /* Assets+Generated.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
