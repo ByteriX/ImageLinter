@@ -17,11 +17,12 @@ Check image files and resources for Swift
 
 ## Accessibility
 
-1. Support Assets and files with @Xx notation
-2. vector/rastor diffenition and you can limit use formats by PNG, JPG, PDF formats
-3. Support any use notation: SwiftUI, UIKit, SwiftGen, and custom Regex
-4. You can ignore any images
-5. Any settings for generation errors or warnings
+1. Possible analyse the sources (swift, Objective-C files) and resources (Storyboard, xib files)
+2. Support Assets and files with @Xx notation
+3. vector/rastor diffenition and you can limit use formats by PNG, JPG, PDF, SVG, etc formats
+4. Support any use notation: SwiftUI, UIKit, SwiftGen, and custom Regex
+5. You can ignore any images
+6. Any settings for generation errors or warnings
 
 ## Install
 
@@ -62,12 +63,33 @@ let ignoredUndefinedImages: Set<String> = [
 	"ReadMe.PDF"
 ]
 
-let isThrowingErrorForUntranslated = true
-let isThrowingErrorForUnused = true
-let isClearWhitespasesInLocalizableFiles = false
-let isOnlyOneLanguage = false
-/// Cleaning localizable files. Will remove comments, empty lines and order your keys by alphabetical.
-let isCleaningFiles = false
+let rastorExtensions = ["png", "jpg", "jpeg"]
+let vectorExtensions = ["pdf", "svg"]
+let rastorSetExtensions = Set<String>(rastorExtensions.map{$0.uppercased()})
+let vectorSetExtensions = Set<String>(vectorExtensions.map{$0.uppercased()})
+let imageSetExtensions = rastorSetExtensions.union(vectorSetExtensions)
+
+let sourcesExtensions = ["swift", "mm", "m"]
+let resourcesExtensions = ["storyboard", "xib"]
+let sourcesSetExtensions = Set<String>(sourcesExtensions.map{$0.uppercased()})
+let resourcesSetExtensions = Set<String>(resourcesExtensions.map{$0.uppercased()})
+
+
+// Maximum size of Vector files
+let maxVectorFileSize: UInt64 = 20_000
+let maxVectorImageSize: CGSize = CGSize(width: 100, height: 100)
+
+// Maximum size of Rastor files
+let maxRastorFileSize: UInt64 = 200_000
+let maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
+
+let isCheckingFileSize = true
+let isCheckingImageSize = true
+let isCheckingPdfVector = true
+let isCheckingSvgVector = true
+let isCheckingScaleSize = true
+let isCheckingDuplicatedByName = true
+let isCheckingDuplicatedByContent = true
 ```
 
 ## Example
