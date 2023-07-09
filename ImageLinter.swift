@@ -451,9 +451,10 @@ class ImageInfo {
                     if let scale = file.scale {
                         setAndCheckType(newType: .rastor, filePath: imageFilePath)
                         if Int(pixelSize.width) % scale != 0 || Int(pixelSize.height) % scale != 0 {
+                            let newScaledSize: (width: Double, height: Double) = (Double(pixelSize.width) / Double(scale), Double(pixelSize.height) / Double(scale))
                             printError(
                                 filePath: imageFilePath,
-                                message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale). Found for image '\(name)'"
+                                message: "Image has floating size from scaled images. Real size is \(pixelSize) and scale = \(scale). Please check the file, it must have integer size after apply this scale. But you actually have \(newScaledSize). Found for image '\(name)'."
                             )
                         } else {
                             let newScaledSize: (width: Int, height: Int) = (Int(pixelSize.width) / scale, Int(pixelSize.height) / scale)
