@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.5
+ version 1.5.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2023 ByteriX. All rights reserved.
