@@ -30,18 +30,13 @@ Check image files and resources for Swift
 2. Exclude from "Build Phases" -> "Compile Sources"
 3. Add to "Build Phases" run script: 
 ```bash
-${SRCROOT}/ImageLinter.swift
+${SRCROOT}/ImageLinter.swift -imagesPath "/YouProject/Resources/Images" -sourcePath "/YouProject/Source"
 ```
 ![](Screens/2.png)
 
 ## Setup:
 
 ```swift
-/// Path to folder with images files. For example "/YouProject/Resources/Images"
-let relativeImagesPath = "/."
-
-/// Path of the source folder which will used in searching for localization keys you actually use in your project. For Example "/YouProject/Source"
-let relativeSourcePath = "/."
 
 /// yuo can use many types
 let usingTypes: [UsingType] = [
