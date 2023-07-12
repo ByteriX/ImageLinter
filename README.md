@@ -69,6 +69,8 @@ let resourcesExtensions = ["storyboard", "xib"]
 let sourcesSetExtensions = Set<String>(sourcesExtensions.map{$0.uppercased()})
 let resourcesSetExtensions = Set<String>(resourcesExtensions.map{$0.uppercased()})
 
+// If you wan't show double errors/warnings for all files of an image change this to false
+let isAllFilesErrorShowing = false
 
 // Maximum size of Vector files
 let maxVectorFileSize: UInt64 = 20_000

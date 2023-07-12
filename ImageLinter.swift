@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.6
+ version 1.6.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2023 ByteriX. All rights reserved.
@@ -70,8 +70,8 @@ let resourcesExtensions = ["storyboard", "xib"]
 let sourcesSetExtensions = Set<String>(sourcesExtensions.map{$0.uppercased()})
 let resourcesSetExtensions = Set<String>(resourcesExtensions.map{$0.uppercased()})
 
-// If you wan't show double errors/warnings for all files of image change this to false
-let isAllFilesErrorShowing = true
+// If you wan't show double errors/warnings for all files of an image change this to false
+let isAllFilesErrorShowing = false
 
 // Maximum size of Vector files
 let maxVectorFileSize: UInt64 = 20_000
