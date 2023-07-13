@@ -12,6 +12,7 @@ Check image files and resources for Swift
  6. Checking duplicate images by name
  7. Checking duplicate images by content (but identical)
  8. Search empty and broken asset images
+ 9. Analysis scales of images with dependency on platforms target
 
 ![](Screens/1.png)
 
@@ -87,6 +88,9 @@ let isCheckingSvgVector = true
 let isCheckingScaleSize = true
 let isCheckingDuplicatedByName = true
 let isCheckingDuplicatedByContent = true
+
+/// yuo can use many platforms
+let targetPlatforms: [TargetPlatform] = [.iOS, .macOS]
 ```
 
 ## Example

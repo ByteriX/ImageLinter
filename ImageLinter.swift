@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 1.6.1
+ version 1.7
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2023 ByteriX. All rights reserved.
@@ -551,7 +551,7 @@ class ImageInfo {
                 isWarning: true
             )
         } else if type == .rastor {
-            // analyse scales
+            // Analysis scales with dependency on target platforms
             let currentScalesDictionary : Dictionary<Int, File> = files.reduce(Dictionary<Int, File>()) { result, file in
                 if let scale = file.scale {
                     var newResult = result
