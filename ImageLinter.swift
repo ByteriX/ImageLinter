@@ -89,6 +89,19 @@ let isCheckingScaleSize = true
 let isCheckingDuplicatedByName = true
 let isCheckingDuplicatedByContent = true
 
+/// Your project should compile for one or more platform. This need for detect quality of images.
+enum TargetPlatform {
+    case iOS
+    case iPadOS
+    case macOS
+    case tvOS
+    case visionOS
+    case watchOS
+}
+
+/// yuo can use many platforms
+let targetPlatforms: [TargetPlatform] = [.iOS]
+
 // MARK: end of settings the script
 
 let startDate = Date()
@@ -111,7 +124,23 @@ for usingType in usingTypes {
     }
 }
 
-
+let allImageScales = (1...3)
+var targetScales: Set<Int> = []
+for targetPlatform in targetPlatforms {
+    switch targetPlatform {
+    case .iPadOS, .visionOS, .watchOS:
+        targetScales.insert(2)
+    case .iOS:
+        targetScales.insert(2)
+        targetScales.insert(3)
+    case .macOS, .tvOS:
+        targetScales.insert(1)
+        targetScales.insert(2)
+    }
+}
+if targetScales.count < 1 {
+    print("\(CommandLine.arguments[0]):\(#line): error: targetPlatforms should have one or more values. It need for detect quality of images.")
+}
 
 // MARK: detection resources of images
 
@@ -123,8 +152,7 @@ var errorsCount = 0
 // MARK: start analyze
 
 if isEnabled == false {
-    let firstArgument = CommandLine.arguments[0]
-    print("\(firstArgument):\(#line): warning: images checking cancelled")
+    print("\(CommandLine.arguments[0]):\(#line): warning: images checking cancelled")
     exit(000)
 }
 
@@ -243,7 +271,7 @@ func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
 let imagesetExtension = ".imageset"
 let appIconExtension = ".appiconset"
 let assetExtension = ".xcassets"
-let imageScales = (1...3)
+
 class ImageInfo {
     struct File {
         let path: String
@@ -354,7 +382,7 @@ class ImageInfo {
     static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
         var name = (path as NSString).deletingPathExtension
         var scale = 1
-        for imageScale in imageScales {
+        for imageScale in allImageScales {
             let scaleSuffix = "@\(imageScale)x"
             if name.hasSuffix(scaleSuffix) {
                 name = String(name.dropLast(scaleSuffix.count))
@@ -522,6 +550,39 @@ class ImageInfo {
                 message: "The vector image with name '\(name)' has \(files.count) files",
                 isWarning: true
             )
+        } else if type == .rastor {
+            // analyse scales
+            let currentScalesDictionary : Dictionary<Int, File> = files.reduce(Dictionary<Int, File>()) { result, file in
+                if let scale = file.scale {
+                    var newResult = result
+                    newResult[scale] = file
+                    return newResult
+                } else {
+                    printError(
+                        filePath: file.path,
+                        message: "The rastor image with name '\(name)' has undefined scale. May be it's vector?",
+                        isWarning: true
+                    )
+                }
+                return result
+            }
+            let currentScales = Set<Int>(currentScalesDictionary.keys)
+            let extraScales = currentScales.subtracting(targetScales)
+            for extraScale in extraScales {
+                printError(
+                    filePath: currentScalesDictionary[extraScale]?.path ?? "",
+                    message: "The rastor image with name '\(name)' has extra scale=\(extraScale) for current platforms target (\(targetPlatforms)).",
+                    isWarning: true
+                )
+            }
+            let missingScales = targetScales.subtracting(currentScales)
+            if missingScales.count > 0 {
+                printError(
+                    filePath: files.first?.path ?? "",
+                    message: "The rastor image with name '\(name)' has missing scale=\(missingScales). You need add images with this scales for correct showing at selected target platforms = \(targetPlatforms).",
+                    isWarning: true
+                )
+            }
         }
     }
 
