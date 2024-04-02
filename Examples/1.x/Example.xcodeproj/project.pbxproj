@@ -25,13 +25,13 @@
 /* Begin PBXFileReference section */
 		C3188D172A5F44ED00E384D3 /* NotUsing@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NotUsing@2x.png"; sourceTree = "<group>"; };
 		C3188D182A5F44ED00E384D3 /* NotUsing.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = NotUsing.png; sourceTree = "<group>"; };
-		C3188D1B2A5F488F00E384D3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		C31C728D2BBC935600113564 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
+		C31C728E2BBC935A00113564 /* ImageLinter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ImageLinter.swift; path = ../../ImageLinter.swift; sourceTree = "<group>"; };
 		C3F03CC528E37B90004CFE58 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3F03CC828E37B90004CFE58 /* ExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleApp.swift; sourceTree = "<group>"; };
 		C3F03CCA28E37B90004CFE58 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C3F03CCC28E37B92004CFE58 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C3F03CCF28E37B92004CFE58 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		C3F03CD728E38062004CFE58 /* ImageLinter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ImageLinter.swift; path = ../ImageLinter.swift; sourceTree = "<group>"; };
 		C3F03CD928E43ED1004CFE58 /* NotDuplicated@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NotDuplicated@2x.png"; sourceTree = "<group>"; };
 		C3F03CDA28E43ED1004CFE58 /* NotDuplicated.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = NotDuplicated.png; sourceTree = "<group>"; };
 		C3F03CDB28E43ED1004CFE58 /* NotDuplicated@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NotDuplicated@3x.png"; sourceTree = "<group>"; };
@@ -55,8 +55,8 @@
 		C3F03CBC28E37B90004CFE58 = {
 			isa = PBXGroup;
 			children = (
-				C3188D1B2A5F488F00E384D3 /* README.md */,
-				C3F03CD728E38062004CFE58 /* ImageLinter.swift */,
+				C31C728D2BBC935600113564 /* README.md */,
+				C31C728E2BBC935A00113564 /* ImageLinter.swift */,
 				C3F03CC728E37B90004CFE58 /* Example */,
 				C3F03CC628E37B90004CFE58 /* Products */,
 			);
@@ -198,7 +198,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"$SRCROOT/../ImageLinter.swift\" -imagesPath \"/.\" -sourcePath \"/.\"\n";
+			shellScript = "\"$SRCROOT/../../ImageLinter.swift\" -imagesPath \"/.\" -sourcePath \"/.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
