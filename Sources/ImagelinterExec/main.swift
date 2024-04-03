@@ -12,16 +12,11 @@ import AppKit
 
 let settings = Settings()
 
-let rastorSetExtensions = Set<String>(settings.rastorExtensions.map{$0.uppercased()})
-let vectorSetExtensions = Set<String>(settings.vectorExtensions.map{$0.uppercased()})
-let imageSetExtensions = rastorSetExtensions.union(vectorSetExtensions)
-
-let sourcesSetExtensions = Set<String>(settings.sourcesExtensions.map{$0.uppercased()})
-let resourcesSetExtensions = Set<String>(settings.resourcesExtensions.map{$0.uppercased()})
-
 // MARK: end of settings the script
 
 let startDate = Date()
+
+let imageSetExtensions = settings.rastorExtensions.union(settings.vectorExtensions)
 
 var searchUsingRegexPatterns: [String] = []
 var isSwiftGen = false
@@ -177,7 +172,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 
             let fileSize = fileSize(fromPath: imageFilePath)
 
-            if vectorSetExtensions.contains(fileExtension) {
+            if settings.vectorExtensions.contains(fileExtension) {
                 if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
                     printError(
                         filePath: imageFilePath,
@@ -198,7 +193,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
                         printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)'")
                     }
                 }
-            } else if rastorSetExtensions.contains(fileExtension) {
+            } else if settings.rastorExtensions.contains(fileExtension) {
                 if settings.isCheckingFileSize, fileSize > settings.maxRastorFileSize {
                     printError(
                         filePath: imageFilePath,
@@ -249,7 +244,7 @@ while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
     let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
     let filePath = "\(sourcePath)/\(sourceFileName)"
     // checks the extension to source
-    if sourcesSetExtensions.contains(fileExtension) {
+    if settings.sourcesExtensions.contains(fileExtension) {
         if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
             let range = NSRange(location: 0, length: (string as NSString).length)
             sourcesRegex.forEach{ regex in
@@ -260,7 +255,7 @@ while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
                 }
             }
         }
-    } else if resourcesSetExtensions.contains(fileExtension) { // checks the extension to resource
+    } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
         if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
             let range = NSRange(location: 0, length: (string as NSString).length)
             resourcesRegex.enumerateMatches(in: string,
