@@ -13,10 +13,10 @@ struct Settings {
     var isEnabled = true
 
     /// Path to folder with images files. For example "/YouProject/Resources/Images"
-    var relativeImagesPath = ""//UserDefaults.standard.string(forKey: "imagesPath")!
+    var relativeImagesPath = ""
 
     /// Path of the source folder which will used in searching for localization keys you actually use in your project. For Example "/YouProject/Source"
-    var relativeSourcePath = ""//UserDefaults.standard.string(forKey: "sourcePath")!
+    var relativeSourcePath = ""
 
     /// Using localizations type from code. If you use custom you need define regex pattern
     enum UsingType {
