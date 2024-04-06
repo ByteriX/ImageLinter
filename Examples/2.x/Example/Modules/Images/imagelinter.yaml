@@ -1,0 +1,51 @@
+
+isEnabled: true
+relativeImagesPath: /Sources/Images/Resources
+relativeSourcePath: /Sources/Images
+usingTypes:
+  - case: uiKit
+  - case: swiftUI
+  - case: swiftGen
+    enumName: Asset
+  - case: custom
+    pattern: "(.*)".image
+ignoredUnusedImages:
+  - temp
+ignoredUndefinedImages:
+  - temp
+rastorExtensions:
+  - png
+  - jpg
+  - jpeg
+vectorExtensions:
+  - pdf
+  - svg
+sourcesExtensions:
+  - swift
+  - mm
+resourcesExtensions:
+  - storyboard
+  - xib
+isAllFilesErrorShowing: false
+maxVectorFileSize: 10000
+maxVectorImageSize:
+  width: 100
+  height: 100
+maxRastorFileSize: 300000
+maxRastorImageSize:
+  width: 300
+  height: 300
+isCheckingFileSize: true
+isCheckingImageSize: true
+isCheckingPdfVector: true
+isCheckingSvgVector: true
+isCheckingScaleSize: true
+isCheckingDuplicatedByName: true
+isCheckingDuplicatedByContent: true
+targetPlatforms:
+  -iOS
+  -iPadOS
+  -macOS
+  -tvOS
+  -visionOS
+  -watchOS
