@@ -43,9 +43,9 @@ isCheckingScaleSize: true
 isCheckingDuplicatedByName: true
 isCheckingDuplicatedByContent: true
 targetPlatforms:
-  -iOS
-  -iPadOS
-  -macOS
-  -tvOS
-  -visionOS
-  -watchOS
+  - iOS
+  - iPadOS
+  - macOS
+  - tvOS
+  - visionOS
+  - watchOS

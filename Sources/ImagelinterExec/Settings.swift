@@ -339,22 +339,20 @@ extension Settings {
                 }
             case .targetPlatforms:
                 if let value = currentValue, value.isEmpty == false {
-                    if let keyValue = Self.getArrayValue(line: value) {
-                        if let targetPlatform = Key.TargetPlatform(rawValue: keyValue) {
-                            switch targetPlatform {
-                            case .iOS:
-                                self.targetPlatforms.append(.iOS)
-                            case .iPadOS:
-                                self.targetPlatforms.append(.iPadOS)
-                            case .macOS:
-                                self.targetPlatforms.append(.macOS)
-                            case .tvOS:
-                                self.targetPlatforms.append(.tvOS)
-                            case .visionOS:
-                                self.targetPlatforms.append(.visionOS)
-                            case .watchOS:
-                                self.targetPlatforms.append(.watchOS)
-                            }
+                    if let targetPlatform = Key.TargetPlatform(rawValue: value) {
+                        switch targetPlatform {
+                        case .iOS:
+                            self.targetPlatforms.append(.iOS)
+                        case .iPadOS:
+                            self.targetPlatforms.append(.iPadOS)
+                        case .macOS:
+                            self.targetPlatforms.append(.macOS)
+                        case .tvOS:
+                            self.targetPlatforms.append(.tvOS)
+                        case .visionOS:
+                            self.targetPlatforms.append(.visionOS)
+                        case .watchOS:
+                            self.targetPlatforms.append(.watchOS)
                         }
                     }
                 } else if isStartKey {
