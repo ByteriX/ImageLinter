@@ -21,6 +21,25 @@ Any significant changes made to this project will be documented in this file.
 - Settings from YAML.
 - Changelog.
 
+## [1.6.0] - 2023-07-10
+
+#### Added
+
+- Image and source pathes from command line getting
+
+## [1.5.1] - 2023-07-09
+
+#### Fixed
+
+- Commented error for scaled images.
+
+## [1.5.0] - 2023-07-09
+
+#### Added
+
+- Analyse from sources and resources.
+- Properties sourcesExtensions, resourcesExtensions, isCheckingImageSize.
+
 ## [1.4.0] - 2022-11-21
 
 #### Added
