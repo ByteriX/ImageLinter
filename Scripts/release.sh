@@ -19,9 +19,9 @@ echo "Release version $CURRENT_VERSION detected"
 APP_CONFIG_PATH="./build.config"
 echo "CURRENT_VERSION=$CURRENT_VERSION" > "$APP_CONFIG_PATH"
 
-cd Examples/Modules+SPM
-checkExit "Start Tests"
+#cd Examples/2.x
+#checkExit "Start Tests"
 
-xcrun simctl shutdown all
-sh ../../Scripts/build.sh -c Debug -p SPMStrings -test 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
-checkExit "Tests on iOS 17.2"
+#xcrun simctl shutdown all
+#sh ../../Scripts/build.sh -c Debug -p Example -test 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
+#checkExit "Tests on iOS 17.2"

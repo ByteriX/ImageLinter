@@ -3,23 +3,31 @@
 
 Any significant changes made to this project will be documented in this file.
 
-## [2.0.1] - 2024-03-22
-
-#### Added
-
-- Tests to release.
-
-#### Fixed
-
-- Documentation with intallation and setup settings sections.
-
-## [2.0.0] - 2024-04-08
+## [2.0.0] - 2024-04-10
 
 #### Added
 
 - Supporting SPM plugin.
 - Settings from YAML.
 - Changelog.
+
+#### Fixed
+
+- Documentation with intallation and setup settings sections.
+
+## [1.7.0] - 2023-07-14
+
+#### Added
+
+- #3 added checking for platform target
+
+## [1.6.1] - 2023-07-13
+
+#### Fixed
+
+- Readme: ImageLinter call with image and source path from command line
+- Example: new case with not found image.
+- #8 issue: duplicated errors.
 
 ## [1.6.0] - 2023-07-10
 
