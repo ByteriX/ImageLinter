@@ -3,6 +3,12 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.0.1] - 2024-04-18
+
+#### Fixed
+
+- Standart both SwiftGen image using.
+
 ## [2.0.0] - 2024-04-10
 
 #### Added

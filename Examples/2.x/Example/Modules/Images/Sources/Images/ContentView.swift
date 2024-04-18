@@ -23,6 +23,12 @@ public struct ContentView: View {
             }
 
             Image("checkSVG")
+
+            Image("NotFoundedImage")
+
+            // SwiftGen ussing:
+            // Asset.Folder.duplicatedImage3.image
+            // Asset.duplicatedImage1.image
         }
         .padding()
     }
