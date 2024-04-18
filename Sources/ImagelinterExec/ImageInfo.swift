@@ -131,12 +131,7 @@ class ImageInfo {
             let result = ImageInfo(name: name, path: path, scale: scale)
             foundedImages[name] = result
             if isSwiftGen {
-                let key = name
-                    .split(separator: "/")
-                    .map { String($0) }
-                    .swiftGen()
-                    .joined(separator: ".")
-                foundedSwiftGenMirrorImages[key] = name
+                foundedSwiftGenMirrorImages[name.swiftGenKey()] = name
             }
             return result
         }

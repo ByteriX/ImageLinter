@@ -118,17 +118,6 @@ extension String {
     }
 }
 
-extension Array where Self.Element == String {
-    func swiftGen() -> [Self.Element] {
-        guard let last = last else {
-            return self
-        }
-        var result: [Self.Element] = dropLast()
-        result.append(last.lowercasedFirstLetter())
-        return result
-    }
-}
-
 extension NSImage {
     var pixelSize: NSSize? {
         if let rep = representations.first {
