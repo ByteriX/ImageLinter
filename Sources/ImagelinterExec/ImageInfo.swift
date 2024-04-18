@@ -124,20 +124,20 @@ class ImageInfo {
     }
 
     private static func processFound(name: String, path: String, scale: Int?) -> ImageInfo {
-        var key = name
-        if isSwiftGen {
-            key = name
-                .split(separator: "/")
-                .map { String($0) }
-                .swiftGen()
-                .joined(separator: ".")
-        }
-        if let existImage = foundedImages[key] {
+        if let existImage = foundedImages[name] {
             existImage.files.append(File(path: path, scale: scale))
             return existImage
         } else {
-            let result = ImageInfo(name: key, path: path, scale: scale)
-            foundedImages[key] = result
+            let result = ImageInfo(name: name, path: path, scale: scale)
+            foundedImages[name] = result
+            if isSwiftGen {
+                let key = name
+                    .split(separator: "/")
+                    .map { String($0) }
+                    .swiftGen()
+                    .joined(separator: ".")
+                foundedSwiftGenMirrorImages[key] = name
+            }
             return result
         }
     }

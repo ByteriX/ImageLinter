@@ -18,20 +18,32 @@ let startDate = Date()
 
 let imageSetExtensions = settings.rastorExtensions.union(settings.vectorExtensions)
 
-var searchUsingRegexPatterns: [String] = []
+struct RegexPattern {
+    let pattern: NSRegularExpression
+    let isSwiftGen: Bool
+}
+var sourcesRegex: [RegexPattern] = []
 var isSwiftGen = false
+
+private func addSourceRegexPattern(pattern: String, isSwiftGen: Bool) {
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        printError(filePath: #file, message: "Not right pattern for regex: \(pattern)", line: #line)
+        return
+    }
+    sourcesRegex.append(RegexPattern(pattern: regex, isSwiftGen: isSwiftGen))
+}
+
 for usingType in settings.usingTypes {
     switch usingType {
     case .custom(let pattern):
-        searchUsingRegexPatterns.append(pattern)
+        addSourceRegexPattern(pattern: pattern, isSwiftGen: false)
     case .swiftUI:
-        searchUsingRegexPatterns.append(#"\bImage\(\s*"(.*)"\s*\)"#)
+        addSourceRegexPattern(pattern: #"\bImage\(\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .uiKit:
-        searchUsingRegexPatterns.append(#"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#)
+        addSourceRegexPattern(pattern: #"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .swiftGen(let enumName):
-        searchUsingRegexPatterns
-            .append(enumName +
-                #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage)"#)
+        addSourceRegexPattern(pattern: enumName +
+                #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage)"#, isSwiftGen: true)
         isSwiftGen = true
     }
 }
@@ -162,6 +174,7 @@ let svgRasterPattern = #".*<image .*"#
 let svgRasterRegex = try? NSRegularExpression(pattern: svgRasterPattern, options: [])
 
 var foundedImages: [String: ImageInfo] = [:]
+var foundedSwiftGenMirrorImages: [String: String] = [:]
 
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
     let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
@@ -230,13 +243,8 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 let sourcePath = FileManager.default.currentDirectoryPath + settings.relativeSourcePath
 print("source folder: \(sourcePath)")
 var usedImages: [String] = []
-let sourcesRegex = searchUsingRegexPatterns.compactMap { regexPattern in
-    let regex = try? NSRegularExpression(pattern: regexPattern, options: [])
-    if regex == nil {
-        printError(filePath: #file, message: "Not right pattern for regex: \(regexPattern)", line: #line)
-    }
-    return regex
-}
+var usedImagesFromSwiftGen: [String] = []
+
 let resourcesRegex = try! NSRegularExpression(pattern: #"<\bimage name="(.[A-z0-9]*)""#, options: [])
 // Search all using
 let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
@@ -248,11 +256,12 @@ while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
         if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
             let range = NSRange(location: 0, length: (string as NSString).length)
             sourcesRegex.forEach{ regex in
-                regex.enumerateMatches(in: string,
-                                        options: [],
-                                        range: range) { result, _, _ in
-                    addUsedImage(from: string, result: result, path: filePath)
-                }
+                regex.pattern.enumerateMatches(
+                    in: string,
+                    options: [],
+                    range: range) { result, _, _ in
+                        addUsedImage(from: string, result: result, path: filePath, isSwiftGen: regex.isSwiftGen)
+                    }
             }
         }
     } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
@@ -267,7 +276,7 @@ while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
     }
 }
 
-func addUsedImage(from string: String, result: NSTextCheckingResult?, path: String) {
+func addUsedImage(from string: String, result: NSTextCheckingResult?, path: String, isSwiftGen: Bool = false) {
     guard let result = result, result.numberOfRanges > 0 else {
         return
     }
@@ -275,15 +284,26 @@ func addUsedImage(from string: String, result: NSTextCheckingResult?, path: Stri
     let value = (1...result.numberOfRanges - 1).map { index in
         (string as NSString).substring(with: result.range(at: index))
     }.joined()
-    usedImages.append(value)
-    if foundedImages[value] == nil, settings.ignoredUndefinedImages.contains(value) == false {
+    var foundedImage: Any? = nil
+    if isSwiftGen {
+        usedImagesFromSwiftGen.append(value)
+        foundedImage = foundedSwiftGenMirrorImages[value]
+    } else {
+        usedImages.append(value)
+        foundedImage = foundedImages[value]
+    }
+
+    if foundedImage == nil, settings.ignoredUndefinedImages.contains(value) == false {
         let line = (string as NSString).substring(with: NSRange(location: 0, length: result.range(at: 0).location)).linesCount
 
         printError(filePath: path, message: "Not found image with name '\(value)'", line: line)
     }
 }
 
-let unusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(settings.ignoredUnusedImages)
+let standartUnusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(settings.ignoredUnusedImages)
+let swiftGenUnusedImages = Set(foundedSwiftGenMirrorImages.keys).subtracting(usedImagesFromSwiftGen).subtracting(settings.ignoredUnusedImages)
+let unusedImages = Set(standartUnusedImages).intersection(swiftGenUnusedImages.compactMap {foundedSwiftGenMirrorImages[$0]} )
+
 for unusedImage in unusedImages {
     if let imageInfo = foundedImages[unusedImage] {
         imageInfo.error(with: "File unused from code. Found for image '\(imageInfo.name)'")
