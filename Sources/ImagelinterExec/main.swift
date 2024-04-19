@@ -112,10 +112,6 @@ extension String {
         }
         return Int(dropLast(1))
     }
-
-    func lowercasedFirstLetter() -> String {
-        return prefix(1).lowercased() + dropFirst()
-    }
 }
 
 extension NSImage {

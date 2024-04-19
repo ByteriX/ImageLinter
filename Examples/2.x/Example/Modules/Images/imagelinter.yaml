@@ -27,7 +27,7 @@ resourcesExtensions:
   - storyboard
   - xib
 isAllFilesErrorShowing: false
-maxVectorFileSize: 10000
+maxVectorFileSize: 30000
 maxVectorImageSize:
   width: 100
   height: 100

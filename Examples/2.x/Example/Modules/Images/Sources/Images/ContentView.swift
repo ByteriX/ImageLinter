@@ -29,6 +29,8 @@ public struct ContentView: View {
             // SwiftGen ussing:
             // Asset.Folder.duplicatedImage3.image
             // Asset.duplicatedImage1.image
+            // Asset.snakeCaseImage.image
+            Image("snake-case_image")
         }
         .padding()
     }

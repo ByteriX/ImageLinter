@@ -21,7 +21,7 @@ let package = Package(
             dependencies: [
             ],
             plugins: [
-                .plugin(name: "ImagelinterPlugin", package: "Imagelinter"),
+                //.plugin(name: "ImagelinterPlugin", package: "Imagelinter"),
             ]
         )
     ]

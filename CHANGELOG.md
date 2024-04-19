@@ -8,6 +8,7 @@ Any significant changes made to this project will be documented in this file.
 #### Fixed
 
 - Standart both SwiftGen image using.
+- #10 SwiftGen variation with name contains '-' and '_' symbols.
 
 ## [2.0.0] - 2024-04-10
 
