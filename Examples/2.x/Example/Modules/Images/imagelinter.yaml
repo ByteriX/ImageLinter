@@ -9,6 +9,12 @@ usingTypes:
     enumName: Asset
   - case: custom
     pattern: "(.*)".image
+    isSwiftGen: false
+  - case: custom
+    pattern: "(.*)".image
+    isSwiftGen: true
+    - case: custom
+    pattern: "(.*)".name
 ignoredUnusedImages:
   - temp
 ignoredUndefinedImages:

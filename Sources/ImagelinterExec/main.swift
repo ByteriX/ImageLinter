@@ -35,15 +35,15 @@ private func addSourceRegexPattern(pattern: String, isSwiftGen: Bool) {
 
 for usingType in settings.usingTypes {
     switch usingType {
-    case .custom(let pattern):
-        addSourceRegexPattern(pattern: pattern, isSwiftGen: false)
+    case .custom(let pattern, let isSwiftGen):
+        addSourceRegexPattern(pattern: pattern, isSwiftGen: isSwiftGen)
     case .swiftUI:
         addSourceRegexPattern(pattern: #"\bImage\(\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .uiKit:
         addSourceRegexPattern(pattern: #"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .swiftGen(let enumName):
         addSourceRegexPattern(pattern: enumName +
-                #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage)"#, isSwiftGen: true)
+                #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage|\s*\.name)"#, isSwiftGen: true)
         isSwiftGen = true
     }
 }

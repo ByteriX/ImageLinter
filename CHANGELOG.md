@@ -3,6 +3,16 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.0.2] - 2024-04-21
+
+#### Fixed
+
+- SwiftGen type options with using .name property.
+
+#### Added
+
+- To Custom type `isSwiftGen` attribute.
+
 ## [2.0.1] - 2024-04-18
 
 #### Fixed

@@ -23,7 +23,7 @@ struct Settings {
         case swiftUI
         case uiKit
         case swiftGen(enumName: String = "Asset")
-        case custom(pattern: String)
+        case custom(pattern: String, isSwiftGen: Bool)
     }
 
     /// yuo can use many types
@@ -241,13 +241,25 @@ extension Settings {
                                 guard lineIndex < lines.count else {
                                     break
                                 }
-                                let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                                if line.hasPrefix("#") == false,
+                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var customPattern: String?
+                                var customIsSwiftGen = false
+
+                                // TODO: # needs just continue
+                                while line.hasPrefix("#") == false,
                                    let object = Self.getObject(line: line),
-                                   object.name == "pattern"
+                                   object.name == "pattern" || object.name == "isSwiftGen"
                                 {
                                     lineIndex += 1
-                                    self.usingTypes.append(.custom(pattern: object.value))
+                                    if object.name == "pattern" {
+                                        customPattern = object.value
+                                    } else if object.name == "isSwiftGen", let isSwiftGen = Bool(object.value) {
+                                        customIsSwiftGen = isSwiftGen
+                                    }
+                                    line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                }
+                                if let customPattern {
+                                    self.usingTypes.append(.custom(pattern: customPattern, isSwiftGen: customIsSwiftGen))
                                 }
                             }
                         }

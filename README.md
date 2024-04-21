@@ -73,6 +73,9 @@ usingTypes:
   - case: swiftGen
     enumName: Asset
   - case: custom
+    pattern: "(.*)".name
+    isSwiftGen: true
+  - case: custom
     pattern: "(.*)".image
 ignoredUnusedImages:
   - temp
