@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.0.3] - 2024-04-23
+
+#### Added
+
+- Supporting Settings with more yaml/yml extension from Root Library/target with inherited. Priority: target/root, yaml/yml.
+- Documentation of Settings file format.
+
 ## [2.0.2] - 2024-04-21
 
 #### Fixed

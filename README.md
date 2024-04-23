@@ -61,7 +61,14 @@ ${SRCROOT}/ImageLinter.swift -imagesPath "/YouProject/Resources/Images" -sourceP
 ```
 ![](Screens/2.png)
 
-## Setup:
+## Settings:
+
+You need to add a settings file named `imagelinter.yaml` or/and `imagelinter.yml` to a `target` or/and `the root of the library` `dir` of the package.
+imagesPath and sourcePath are calculated from dir of this package. 
+
+Supports more settings files with rewrite properties with priority: first a `target` then `the root of library `dir`, first `imagelinter.yaml` then `imagelinter.yml`.
+
+### Example of Settings file format
 
 ```yaml
 isEnabled: true

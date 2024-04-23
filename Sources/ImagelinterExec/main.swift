@@ -134,8 +134,7 @@ extension CGImage {
     }
 }
 
-let imagesPath = FileManager.default.currentDirectoryPath + settings.relativeImagesPath
-print("image folder: \(imagesPath)")
+print("image folder: \(settings.imagesPath)")
 
 func fileSize(fromPath path: String) -> UInt64 {
     let size: Any? = try? FileManager.default.attributesOfItem(atPath: path)[FileAttributeKey.size]
@@ -152,7 +151,7 @@ func covertToString(fileSize: UInt64) -> String {
 
 
 
-let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
+let imageFileEnumerator = FileManager.default.enumerator(atPath: settings.imagesPath)
 let pdfRasterPattern = #".*\/[Ii]mage.*"#
 let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
 let svgRasterPattern = #".*<image .*"#
@@ -164,7 +163,7 @@ var foundedSwiftGenMirrorImages: [String: String] = [:]
 while let imageFileName = imageFileEnumerator?.nextObject() as? String {
     let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
     if imageSetExtensions.contains(fileExtension) {
-        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
 
         if let imageInfo = ImageInfo.processFound(path: imageFileName){
 
@@ -201,7 +200,7 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
             }
         }
     } else if imageFileName.hasSuffix(imagesetExtension) {
-        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
         let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
         var files: Set<String> = []
         while let fileName = fileEnumerator?.nextObject() as? String {
@@ -225,17 +224,16 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 
 // MARK: - detect unused Images
 
-let sourcePath = FileManager.default.currentDirectoryPath + settings.relativeSourcePath
-print("source folder: \(sourcePath)")
+print("source folder: \(settings.sourcePath)")
 var usedImages: [String] = []
 var usedImagesFromSwiftGen: [String] = []
 
 let resourcesRegex = try! NSRegularExpression(pattern: #"<\bimage name="(.[A-z0-9]*)""#, options: [])
 // Search all using
-let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
+let sourceFileEnumerator = FileManager.default.enumerator(atPath: settings.sourcePath)
 while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
     let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
-    let filePath = "\(sourcePath)/\(sourceFileName)"
+    let filePath = "\(settings.sourcePath)/\(sourceFileName)"
     // checks the extension to source
     if settings.sourcesExtensions.contains(fileExtension) {
         if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
@@ -317,9 +315,9 @@ if settings.isCheckingDuplicatedByContent {
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
                imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
-                let imageFilePath1 = "\(imagesPath)/\(file1.path)"
+                let imageFilePath1 = "\(settings.imagesPath)/\(file1.path)"
                 let file2 = imageInfo2.files.first!
-                let imageFilePath2 = "\(imagesPath)/\(file2.path)"
+                let imageFilePath2 = "\(settings.imagesPath)/\(file2.path)"
                 printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }

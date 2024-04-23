@@ -28,7 +28,7 @@ struct FolderContents: Decodable {
 }
 
 func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
-    let contentsPath = imagesPath + "/" + folder + "/Contents.json"
+    let contentsPath = settings.imagesPath + "/" + folder + "/Contents.json"
     guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
         return nil
     }
@@ -186,7 +186,7 @@ class ImageInfo {
 
     func error(with message: String) {
         for file in files {
-            let imageFilePath = "\(imagesPath)/\(file.path)"
+            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
             printError(filePath: imageFilePath, message: message)
             guard settings.isAllFilesErrorShowing else {
                 break
@@ -218,7 +218,7 @@ class ImageInfo {
     func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
-            let imageFilePath = "\(imagesPath)/\(file.path)"
+            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath) {
                 let pixelSize = image.pixelSize ?? NSSize()
                 let size = image.size
@@ -352,7 +352,7 @@ class ImageInfo {
         var maxScale = 0
         var result: Data?
         for file in files {
-            let imageFilePath = "\(imagesPath)/\(file.path)"
+            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {

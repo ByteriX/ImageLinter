@@ -17,8 +17,7 @@ struct LocalinterPlugin: BuildToolPlugin {
                 displayName: "Running Imagelinter",
                 executable: executable,
                 arguments: [
-//                    "--sourcePath", target.directory.string,
-//                    "--imagesPath", target.directory.string,
+                    "--settingsPath", target.directory.string
                 ]
             ),
         ]
@@ -37,8 +36,7 @@ struct LocalinterPlugin: BuildToolPlugin {
                     displayName: "Running Imagelinter",
                     executable: executable,
                     arguments: [
-//                        "--sourcePath", context.xcodeProject.directory.string,
-//                        "--imagesPath", context.xcodeProject.directory.string,
+                        "--settingsPath", context.xcodeProject.directory.string
                     ]
                 ),
             ]

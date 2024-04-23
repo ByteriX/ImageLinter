@@ -12,11 +12,23 @@ struct Settings {
     /// For enable or disable this script
     var isEnabled = true
 
+    var dir: String = defaultDir
+
     /// Path to folder with images files. For example "/YouProject/Resources/Images"
-    var relativeImagesPath = ""
+    private var relativeImagesPath = "" {
+        didSet {
+            imagesPath = dir + relativeImagesPath
+        }
+    }
+    var imagesPath = ""
 
     /// Path of the source folder which will used in searching for localization keys you actually use in your project. For Example "/YouProject/Source"
-    var relativeSourcePath = ""
+    private var relativeSourcePath = "" {
+        didSet {
+            sourcePath = dir + relativeSourcePath
+        }
+    }
+    var sourcePath = ""
 
     /// Using localizations type from code. If you use custom you need define regex pattern
     enum UsingType {
@@ -90,7 +102,9 @@ struct Settings {
 
 extension Settings {
 
-    private static let fileName = "imagelinter.yaml"
+    private static let extensions = ["yml", "yaml"]
+    private static let fileName = "imagelinter"
+    private static let defaultDir = FileManager.default.currentDirectoryPath
 
     private enum Key: String {
         case isEnabled
@@ -145,12 +159,33 @@ extension Settings {
     }
 
     fileprivate mutating func load() {
+        var dirs = [Self.defaultDir]
 
-        let filePath = (FileManager.default.currentDirectoryPath as NSString).appendingPathComponent(Self.fileName)
+        var argIndex = 1
+        while argIndex < CommandLine.arguments.count {
+            if CommandLine.arguments[argIndex] == "--settingsPath" {
+                argIndex += 1
+                if argIndex < CommandLine.arguments.count {
+                    dirs.append(CommandLine.arguments[argIndex])
+                }
+            }
+            argIndex += 1
+        }
+        for dir in dirs {
+            for ext in Self.extensions {
+                load(dir: dir, ext: ext)
+            }
+        }
+    }
+
+    fileprivate mutating func load(dir: String, ext: String) {
+
+        let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
         guard let stringData = try? String(contentsOfFile: filePath) else {
             print("Settings file '\(filePath)' not found")
             return
         }
+        self.dir = dir
         print("Parse settings file '\(filePath)':")
 
         let lines = stringData.components(separatedBy: .newlines)

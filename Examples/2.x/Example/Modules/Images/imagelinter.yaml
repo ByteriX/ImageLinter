@@ -1,7 +1,7 @@
 
 isEnabled: true
-relativeImagesPath: /Sources/Images/Resources
-relativeSourcePath: /Sources/Images
+relativeImagesPath: /Sources/Images/Resources/Error
+relativeSourcePath: /Sources/Images/Error
 usingTypes:
   - case: uiKit
   - case: swiftUI
