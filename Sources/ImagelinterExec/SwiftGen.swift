@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  SwiftGen.swift
+//
 //
 //  Created by Sergey Balalaev on 18.04.2024.
 //
