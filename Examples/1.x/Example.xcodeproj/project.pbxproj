@@ -198,7 +198,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"$SRCROOT/../../ImageLinter.swift\" -imagesPath \"/.\" -sourcePath \"/.\"\n";
+			shellScript = "\"$SRCROOT/../../ImageLinter.swift\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

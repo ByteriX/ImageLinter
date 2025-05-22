@@ -19,6 +19,8 @@ echo "Release version $CURRENT_VERSION detected"
 APP_CONFIG_PATH="./build.config"
 echo "CURRENT_VERSION=$CURRENT_VERSION" > "$APP_CONFIG_PATH"
 
+swift MakeImageLinter.swift -version "$CURRENT_VERSION"
+
 #cd Examples/2.x
 #checkExit "Start Tests"
 
