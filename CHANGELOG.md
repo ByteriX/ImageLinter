@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.1.0] - 2024-05-24
+
+#### Added
+
+- Updating script version `ImageLinter.swift` from release script.
+- Actualization both examples for using with a Plugin and a Script.
+
 ## [2.0.3] - 2024-04-23
 
 #### Added

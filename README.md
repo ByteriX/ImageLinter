@@ -51,13 +51,13 @@ Once you have your Swift package set up, adding `Imagelinter` as a dependency is
     
 ```
 
-### Old 1.7 version instalation
+### Swift script from Build Phases
 
 1. Just copy ImageLinter.swift to project.
 2. Exclude from "Build Phases" -> "Compile Sources"
 3. Add to "Build Phases" run script: 
 ```bash
-${SRCROOT}/ImageLinter.swift -imagesPath "/YouProject/Resources/Images" -sourcePath "/YouProject/Source"
+${SRCROOT}/ImageLinter.swift
 ```
 ![](Screens/2.png)
 
