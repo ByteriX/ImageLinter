@@ -24,3 +24,7 @@ checkExit "Start to make ImageLinter.swift script"
 swift Scripts/MakeImageLinter.swift -version "$CURRENT_VERSION"
 
 checkExit "Finished ImageLinter.swift script"
+
+git commit -m "Release $CURRENT_VERSION version with updating Swift script"
+
+checkExit "Version $CURRENT_VERSION commited"
