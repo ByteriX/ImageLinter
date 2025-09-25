@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.1.2] - 2025-09-25
+
+#### Fixed
+
+- Reading the binary vector files.
+- Improvements vector files error messages.
+
 ## [2.1.1] - 2024-05-24
 
 #### Fixed
