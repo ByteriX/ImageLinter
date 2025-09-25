@@ -10,13 +10,13 @@ Any significant changes made to this project will be documented in this file.
 - Reading the binary vector files.
 - Improvements vector files error messages.
 
-## [2.1.1] - 2024-05-24
+## [2.1.1] - 2025-05-24
 
 #### Fixed
 
 - Examples for the SPM plugin using and the Swift Script using.
 
-## [2.1.0] - 2024-05-24
+## [2.1.0] - 2025-05-24
 
 #### Added
 
