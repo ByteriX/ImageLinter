@@ -39,6 +39,8 @@
 		C3F03CE228E6E806004CFE58 /* MixedUp3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@2x.png"; sourceTree = "<group>"; };
 		C3F03CE328E6E806004CFE58 /* MixedUp3@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MixedUp3@3x.png"; sourceTree = "<group>"; };
 		C3F5F64F292CAE5D005F9700 /* Assets+Generated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Assets+Generated.swift"; sourceTree = "<group>"; };
+		C3F8EA5D2E2A383400A7216B /* imagelinter.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = imagelinter.yaml; sourceTree = "<group>"; };
+		C3F8EA5E2E2A383B00A7216B /* swiftgen.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = swiftgen.yml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +58,8 @@
 			isa = PBXGroup;
 			children = (
 				C31C728D2BBC935600113564 /* README.md */,
+				C3F8EA5D2E2A383400A7216B /* imagelinter.yaml */,
+				C3F8EA5E2E2A383B00A7216B /* swiftgen.yml */,
 				C31C728E2BBC935A00113564 /* ImageLinter.swift */,
 				C3F03CC728E37B90004CFE58 /* Example */,
 				C3F03CC628E37B90004CFE58 /* Products */,
