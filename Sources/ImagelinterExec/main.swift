@@ -178,16 +178,22 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
                 }
 
                 if settings.isCheckingPdfVector || settings.isCheckingSvgVector {
-                    if let string = try? String(contentsOfFile: imageFilePath, encoding: .ascii) {
-                        let range = NSRange(location: 0, length: string.count)
-                        if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                            printError(filePath: imageFilePath, message: "PDF File is not vector. Found for image '\(imageInfo.name)'")
-                        }
-                        if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                            printError(filePath: imageFilePath, message: "SVG File is not vector. Found for image '\(imageInfo.name)'")
-                        }
+                    if !FileManager.default.isReadableFile(atPath: imageFilePath) {
+                        printError(filePath: imageFilePath, message: "Can not read file with path: '\(imageFilePath)'")
                     } else {
-                        printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)'")
+                        do {
+                            let string = try String(contentsOfFile: imageFilePath, encoding: .isoLatin1)
+
+                            let range = NSRange(location: 0, length: string.count)
+                            if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                printError(filePath: imageFilePath, message: "PDF File is not a pure vector. Found for image '\(imageInfo.name)'")
+                            }
+                            if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                printError(filePath: imageFilePath, message: "SVG File is not a pure vector. Found for image '\(imageInfo.name)'")
+                            }
+                        } catch let error {
+                            printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)' with error: `\(error.localizedDescription)`")
+                        }
                     }
                 }
             } else if settings.rastorExtensions.contains(fileExtension) {
