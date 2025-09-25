@@ -11,6 +11,7 @@ Any significant changes made to this project will be documented in this file.
 - Improvements vector files error messages.
 
 ## [2.1.1] - 2025-05-24
+>>>>>>> main
 
 #### Fixed
 
