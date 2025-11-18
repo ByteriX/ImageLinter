@@ -22,13 +22,8 @@ struct Settings {
     }
     var imagesPath = ""
 
-    /// Path of the source folder which will used in searching for localization keys you actually use in your project. For Example "/YouProject/Source"
-    private var relativeSourcePath = "" {
-        didSet {
-            sourcePath = dir + relativeSourcePath
-        }
-    }
-    var sourcePath = ""
+    /// Multipath  of the sources folders which will used in searching for images you actually use in your project. For Example ["/YouProject/Source",  "/OtherProject"]
+    var relativeSourcePaths: [String] = []
 
     /// Using localizations type from code. If you use custom you need define regex pattern
     enum UsingType {
@@ -109,6 +104,7 @@ extension Settings {
     private enum Key: String {
         case isEnabled
         case relativeImagesPath
+        case relativeSourcePaths
         case relativeSourcePath
 
         case usingTypes
@@ -248,8 +244,12 @@ extension Settings {
                     self.relativeImagesPath = relativeImagesPath
                 }
             case .relativeSourcePath:
-                if let relativeSourcePath = currentValue {
-                    self.relativeSourcePath = relativeSourcePath
+                if let value = currentValue, value != "" {
+                    relativeSourcePaths.append(value)
+                }
+            case .relativeSourcePaths:
+                if let value = currentValue, value != "" {
+                    relativeSourcePaths.append(value)
                 }
             case .usingTypes:
                 if let value = currentValue, value.isEmpty == false {

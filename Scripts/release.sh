@@ -1,6 +1,7 @@
 #!/bin/bash
 
 checkExit(){
+    echo "$1\n"
     if [ $? != 0 ]; then
         echo "Building failed: $1\n"
         exit 1

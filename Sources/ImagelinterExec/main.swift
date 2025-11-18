@@ -230,36 +230,41 @@ while let imageFileName = imageFileEnumerator?.nextObject() as? String {
 
 // MARK: - detect unused Images
 
-print("source folder: \(settings.sourcePath)")
+
 var usedImages: [String] = []
 var usedImagesFromSwiftGen: [String] = []
-
 let resourcesRegex = try! NSRegularExpression(pattern: #"<\bimage name="(.[A-z0-9]*)""#, options: [])
-// Search all using
-let sourceFileEnumerator = FileManager.default.enumerator(atPath: settings.sourcePath)
-while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
-    let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
-    let filePath = "\(settings.sourcePath)/\(sourceFileName)"
-    // checks the extension to source
-    if settings.sourcesExtensions.contains(fileExtension) {
-        if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
-            let range = NSRange(location: 0, length: (string as NSString).length)
-            sourcesRegex.forEach{ regex in
-                regex.pattern.enumerateMatches(
-                    in: string,
-                    options: [],
-                    range: range) { result, _, _ in
-                        addUsedImage(from: string, result: result, path: filePath, isSwiftGen: regex.isSwiftGen)
-                    }
+
+print("source folders: \(settings.relativeSourcePaths)")
+for relativeSourcePath in settings.relativeSourcePaths {
+    let sourcePath = settings.dir + relativeSourcePath
+    print("source path: \(sourcePath)")
+    // Search all using
+    let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
+    while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
+        let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
+        let filePath = "\(sourcePath)/\(sourceFileName)"
+        // checks the extension to source
+        if settings.sourcesExtensions.contains(fileExtension) {
+            if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                let range = NSRange(location: 0, length: (string as NSString).length)
+                sourcesRegex.forEach{ regex in
+                    regex.pattern.enumerateMatches(
+                        in: string,
+                        options: [],
+                        range: range) { result, _, _ in
+                            addUsedImage(from: string, result: result, path: filePath, isSwiftGen: regex.isSwiftGen)
+                        }
+                }
             }
-        }
-    } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
-        if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
-            let range = NSRange(location: 0, length: (string as NSString).length)
-            resourcesRegex.enumerateMatches(in: string,
-                                    options: [],
-                                    range: range) { result, _, _ in
-                addUsedImage(from: string, result: result, path: filePath)
+        } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
+            if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                let range = NSRange(location: 0, length: (string as NSString).length)
+                resourcesRegex.enumerateMatches(in: string,
+                                                options: [],
+                                                range: range) { result, _, _ in
+                    addUsedImage(from: string, result: result, path: filePath)
+                }
             }
         }
     }

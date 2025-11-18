@@ -71,7 +71,10 @@ Supports more settings files with rewrite properties with priority: first a `tar
 ```yaml
 isEnabled: true
 relativeImagesPath: /Sources/Images/Resources
-relativeSourcePath: /Sources/Images
+relativeSourcePath: /Sources/Code
+relativeSourcePaths:
+  - /Module1/src
+  - /Module2/src
 usingTypes:
   - case: uiKit
   - case: swiftUI
