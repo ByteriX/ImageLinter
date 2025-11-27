@@ -3,11 +3,12 @@
 
 Any significant changes made to this project will be documented in this file.
 
-## [2.2.0] - 2025-11-18
+## [2.2.0] - 2025-11-27
 
 #### Added
 
 - Addition the param relativeSourcePaths as extention of the relativeSourcePath. Before relativeSourcePath worked with issue.
+- Addition the same param relativeImagesPaths as extention of the relativeImagesPath.
 
 ## [2.1.2] - 2025-09-25
 

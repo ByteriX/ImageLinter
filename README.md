@@ -71,6 +71,9 @@ Supports more settings files with rewrite properties with priority: first a `tar
 ```yaml
 isEnabled: true
 relativeImagesPath: /Sources/Images/Resources
+relativeImagesPaths:
+  - /Module1/res
+  - /Module2/res
 relativeSourcePath: /Sources/Code
 relativeSourcePaths:
   - /Module1/src
