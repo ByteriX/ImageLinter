@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 2.1.2
+ version 2.2.0
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2025 ByteriX. All rights reserved.
@@ -108,8 +108,8 @@ struct FolderContents: Decodable {
     }
 }
 
-func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
-    let contentsPath = settings.imagesPath + "/" + folder + "/Contents.json"
+func load<T: Decodable>(_ type: T.Type, dir: String, for folder: String) -> T? {
+    let contentsPath = dir + "/" + folder + "/Contents.json"
     guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
         return nil
     }
@@ -122,9 +122,15 @@ let assetExtension = ".xcassets"
 
 class ImageInfo {
     struct File {
+        // needs concatinate with ImageInfo.dir
         let path: String
         // if nil that vector-universal
         let scale: Int?
+
+        init(path: String, scale: Int?) {
+            self.path = path
+            self.scale = scale
+        }
     }
 
     enum ImageType {
@@ -135,13 +141,15 @@ class ImageInfo {
     }
 
     let name: String
+    // dir for current Asset
+    let dir: String
     var files: [File]
 
     var hash: String = ""
 
     var type: ImageType = .undefined
 
-    func setAndCheckType(newType: ImageType, filePath: String){
+    private func setAndCheckType(newType: ImageType, filePath: String){
         if type != .undefined, newType != type {
             printError(
                 filePath: filePath,
@@ -153,12 +161,13 @@ class ImageInfo {
         }
     }
 
-    init(name: String, path: String, scale: Int?) {
+    private init(name: String, dir: String, path: String, scale: Int?) {
         self.name = name
+        self.dir = dir
         files = [File(path: path, scale: scale)]
     }
 
-    static func processFound(path: String) -> ImageInfo? {
+    static func processFound(dir: String, path: String) -> ImageInfo? {
         var isAsset = false
         var folderName = ""
         let components = path.split(separator: "/")
@@ -171,25 +180,25 @@ class ImageInfo {
                 }
                 if component.hasSuffix(imagesetExtension) { // it is asset
                     let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    if let contents = load(AssetContents.self, for: components[0..<index + 1].joined(separator: "/")) {
+                    if let contents = load(AssetContents.self, dir: dir, for: components[0..<index + 1].joined(separator: "/")) {
                         let fileName = (path as NSString).lastPathComponent
                         let scale: Int? = contents.images.reduce(into: nil) { result, image in
                             if image.filename == fileName {
                                 result = image.scale?.scale
                             }
                         }
-                        return processFound(name: folderName + name, path: path, scale: scale)
+                        return processFound(name: folderName + name, dir: dir, path: path, scale: scale)
                     } else {
                         printError(filePath: path, message: "Not readed scale information. Found for image '\(name)'", isWarning: true)
 
-                        return processFound(name: folderName + name, path: path, scale: nil)
+                        return processFound(name: folderName + name, dir: dir, path: path, scale: nil)
                     }
                     //break
                 } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
                     return nil
                 } else {
                     // It is folder, but way???
-                    if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/")) {
+                    if let contents = load(FolderContents.self, dir: dir, for: components[0..<index + 1].joined(separator: "/")) {
                         if contents.properties?.isNamespace ?? false {
                             folderName += component + "/"
                         }
@@ -199,17 +208,17 @@ class ImageInfo {
         }
         if !isAsset {
             let name = nameOfImageFile(path: path)
-            return processFound(name: name.path, path: path, scale: name.scale)
+            return processFound(name: name.path, dir: dir, path: path, scale: name.scale)
         }
         return nil
     }
 
-    private static func processFound(name: String, path: String, scale: Int?) -> ImageInfo {
+    private static func processFound(name: String, dir: String, path: String, scale: Int?) -> ImageInfo {
         if let existImage = foundedImages[name] {
             existImage.files.append(File(path: path, scale: scale))
             return existImage
         } else {
-            let result = ImageInfo(name: name, path: path, scale: scale)
+            let result = ImageInfo(name: name, dir: dir, path: path, scale: scale)
             foundedImages[name] = result
             if isSwiftGen {
                 foundedSwiftGenMirrorImages[name.swiftGenKey()] = name
@@ -218,11 +227,11 @@ class ImageInfo {
         }
     }
 
-    static func nameOfImageFile(path: String) -> (path: String, scale: Int) {
+    private static func nameOfImageFile(path: String) -> (path: String, scale: Int) {
         return pathOfImageFile(path: (path as NSString).lastPathComponent)
     }
 
-    static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
+    private static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
         var name = (path as NSString).deletingPathExtension
         var scale = 1
         for imageScale in allImageScales {
@@ -236,11 +245,11 @@ class ImageInfo {
         return (name, scale)
     }
 
-    static func isTheSameImage(path1: String, path2: String) -> Bool {
+    private static func isTheSameImage(path1: String, path2: String) -> Bool {
         pathOfImageFile(path: path1).path == pathOfImageFile(path: path2).path
     }
 
-    var assetPath: String? {
+    private var assetPath: String? {
         var result: String?
         for imageFile in files {
             let components = imageFile.path.split(separator: "/")
@@ -267,7 +276,7 @@ class ImageInfo {
 
     func error(with message: String) {
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             printError(filePath: imageFilePath, message: message)
             guard settings.isAllFilesErrorShowing else {
                 break
@@ -293,13 +302,13 @@ class ImageInfo {
         }
     }
 
-    static let svgSearchWidthHeightRegex = try! NSRegularExpression(pattern: #"<svg.*width="(.*?)p?t?".*height="(.*?)p?t?".*>"#, options: [])
-    static let svgSearchHeightWidthRegex = try! NSRegularExpression(pattern: #"<svg.*height="(.*?)p?t?".*width="(.*?)p?t?".*>"#, options: [])
+    private static let svgSearchWidthHeightRegex = try! NSRegularExpression(pattern: #"<svg.*width="(.*?)p?t?".*height="(.*?)p?t?".*>"#, options: [])
+    private static let svgSearchHeightWidthRegex = try! NSRegularExpression(pattern: #"<svg.*height="(.*?)p?t?".*width="(.*?)p?t?".*>"#, options: [])
 
     func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath) {
                 let pixelSize = image.pixelSize ?? NSSize()
                 let size = image.size
@@ -433,7 +442,7 @@ class ImageInfo {
         var maxScale = 0
         var result: Data?
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {
@@ -483,23 +492,13 @@ struct Settings {
     /// For enable or disable this script
     var isEnabled = true
 
-    var dir: String = defaultDir
+    private(set) var dir: String = defaultDir
 
-    /// Path to folder with images files. For example "/YouProject/Resources/Images"
-    private var relativeImagesPath = "" {
-        didSet {
-            imagesPath = dir + relativeImagesPath
-        }
-    }
-    var imagesPath = ""
+    /// Multipath  to folders with images you actually use in your project. For Example ["/YouProject/Resources/Images",  "/OtherProject"]
+    private(set) var relativeImagesPaths: [String] = []
 
-    /// Path of the source folder which will used in searching for localization keys you actually use in your project. For Example "/YouProject/Source"
-    private var relativeSourcePath = "" {
-        didSet {
-            sourcePath = dir + relativeSourcePath
-        }
-    }
-    var sourcePath = ""
+    /// Multipath  of the sources folders which will used in searching for images you actually use in your project. For Example ["/YouProject/Source",  "/OtherProject"]
+    var relativeSourcePaths: [String] = []
 
     /// Using localizations type from code. If you use custom you need define regex pattern
     enum UsingType {
@@ -575,11 +574,20 @@ extension Settings {
 
     private static let extensions = ["yml", "yaml"]
     private static let fileName = "imagelinter"
-    private static let defaultDir = FileManager.default.currentDirectoryPath
+    private static let defaultDir: String = {
+        var result = FileManager.default.currentDirectoryPath
+        if !result.hasSuffix("/") {
+            result = result + "/"
+        }
+        print("defaultDir: \(result)")
+        return result
+    }()
 
     private enum Key: String {
         case isEnabled
+        case relativeImagesPaths
         case relativeImagesPath
+        case relativeSourcePaths
         case relativeSourcePath
 
         case usingTypes
@@ -649,6 +657,14 @@ extension Settings {
         }
     }
 
+    private func pathWithoutSlash(_ path: String) -> String {
+        var result = path
+        if result.hasSuffix("/") {
+            result.removeLast()
+        }
+        return result
+    }
+
     fileprivate mutating func load(dir: String, ext: String) {
 
         let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
@@ -715,12 +731,20 @@ extension Settings {
                     self.isEnabled = isEnabled
                 }
             case .relativeImagesPath:
-                if let relativeImagesPath = currentValue {
-                    self.relativeImagesPath = relativeImagesPath
+                if let value = currentValue, value != "" {
+                    relativeImagesPaths.append(pathWithoutSlash(value))
+                }
+            case .relativeImagesPaths:
+                if let value = currentValue, value != "" {
+                    relativeImagesPaths.append(pathWithoutSlash(value))
                 }
             case .relativeSourcePath:
-                if let relativeSourcePath = currentValue {
-                    self.relativeSourcePath = relativeSourcePath
+                if let value = currentValue, value != "" {
+                    relativeSourcePaths.append(pathWithoutSlash(value))
+                }
+            case .relativeSourcePaths:
+                if let value = currentValue, value != "" {
+                    relativeSourcePaths.append(pathWithoutSlash(value))
                 }
             case .usingTypes:
                 if let value = currentValue, value.isEmpty == false {
@@ -1049,8 +1073,6 @@ extension CGImage {
     }
 }
 
-print("image folder: \(settings.imagesPath)")
-
 func fileSize(fromPath path: String) -> UInt64 {
     let size: Any? = try? FileManager.default.attributesOfItem(atPath: path)[FileAttributeKey.size]
     guard let fileSize = size as? UInt64 else {
@@ -1064,9 +1086,6 @@ func covertToString(fileSize: UInt64) -> String {
     ByteCountFormatter().string(fromByteCount: Int64(fileSize))
 }
 
-
-
-let imageFileEnumerator = FileManager.default.enumerator(atPath: settings.imagesPath)
 let pdfRasterPattern = #".*\/[Ii]mage.*"#
 let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
 let svgRasterPattern = #".*<image .*"#
@@ -1075,106 +1094,117 @@ let svgRasterRegex = try? NSRegularExpression(pattern: svgRasterPattern, options
 var foundedImages: [String: ImageInfo] = [:]
 var foundedSwiftGenMirrorImages: [String: String] = [:]
 
-while let imageFileName = imageFileEnumerator?.nextObject() as? String {
-    let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
-    if imageSetExtensions.contains(fileExtension) {
-        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
+print("image folders: \(settings.relativeImagesPaths)")
 
-        if let imageInfo = ImageInfo.processFound(path: imageFileName){
+for relativeImagesPath in settings.relativeImagesPaths {
+    let imagesPath = settings.dir + relativeImagesPath
+    let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
 
-            let fileSize = fileSize(fromPath: imageFilePath)
+    while let imageFileName = imageFileEnumerator?.nextObject() as? String {
+        let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
+        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        if imageSetExtensions.contains(fileExtension) {
 
-            if settings.vectorExtensions.contains(fileExtension) {
-                if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
-                    printError(
-                        filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxVectorFileSize)). Found for image '\(imageInfo.name)'"
-                    )
-                }
+            if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
 
-                if settings.isCheckingPdfVector || settings.isCheckingSvgVector {
-                    if !FileManager.default.isReadableFile(atPath: imageFilePath) {
-                        printError(filePath: imageFilePath, message: "Can not read file with path: '\(imageFilePath)'")
-                    } else {
-                        do {
-                            let string = try String(contentsOfFile: imageFilePath, encoding: .isoLatin1)
+                let fileSize = fileSize(fromPath: imageFilePath)
 
-                            let range = NSRange(location: 0, length: string.count)
-                            if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                                printError(filePath: imageFilePath, message: "PDF File is not a pure vector. Found for image '\(imageInfo.name)'")
+                if settings.vectorExtensions.contains(fileExtension) {
+                    if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
+                        printError(
+                            filePath: imageFilePath,
+                            message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxVectorFileSize)). Found for image '\(imageInfo.name)'"
+                        )
+                    }
+
+                    if settings.isCheckingPdfVector || settings.isCheckingSvgVector {
+                        if !FileManager.default.isReadableFile(atPath: imageFilePath) {
+                            printError(filePath: imageFilePath, message: "Can not read file with path: '\(imageFilePath)'")
+                        } else {
+                            do {
+                                let string = try String(contentsOfFile: imageFilePath, encoding: .isoLatin1)
+
+                                let range = NSRange(location: 0, length: string.count)
+                                if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                    printError(filePath: imageFilePath, message: "PDF File is not a pure vector. Found for image '\(imageInfo.name)'")
+                                }
+                                if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                    printError(filePath: imageFilePath, message: "SVG File is not a pure vector. Found for image '\(imageInfo.name)'")
+                                }
+                            } catch let error {
+                                printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)' with error: `\(error.localizedDescription)`")
                             }
-                            if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                                printError(filePath: imageFilePath, message: "SVG File is not a pure vector. Found for image '\(imageInfo.name)'")
-                            }
-                        } catch let error {
-                            printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)' with error: `\(error.localizedDescription)`")
                         }
                     }
+                } else if settings.rastorExtensions.contains(fileExtension) {
+                    if settings.isCheckingFileSize, fileSize > settings.maxRastorFileSize {
+                        printError(
+                            filePath: imageFilePath,
+                            message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxRastorFileSize)). Found for image '\(imageInfo.name)'"
+                        )
+                    }
                 }
-            } else if settings.rastorExtensions.contains(fileExtension) {
-                if settings.isCheckingFileSize, fileSize > settings.maxRastorFileSize {
-                    printError(
-                        filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxRastorFileSize)). Found for image '\(imageInfo.name)'"
-                    )
+            }
+        } else if imageFileName.hasSuffix(imagesetExtension) {
+            let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
+            var files: Set<String> = []
+            while let fileName = fileEnumerator?.nextObject() as? String {
+                files.insert(fileName)
+            }
+            let name = ((imageFileName as NSString).lastPathComponent as NSString).deletingPathExtension
+            if let content = load(AssetContents.self, dir: imagesPath, for: imageFileName) {
+                let contentFileNames = Set<String>(content.images.compactMap { $0.filename })
+                if contentFileNames.isEmpty {
+                    printError(filePath: imageFileName, message: "Empty asset with name '\(name)'")
                 }
+                let notFoundFile = contentFileNames.subtracting(files)
+                for file in notFoundFile {
+                    printError(filePath: imageFileName, message: "Not found file '\(file)' for Asset with name '\(name)'")
+                }
+            } else {
+                printError(filePath: imageFileName, message: "Empty folder for Asset with name '\(name)'")
             }
-        }
-    } else if imageFileName.hasSuffix(imagesetExtension) {
-        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
-        let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
-        var files: Set<String> = []
-        while let fileName = fileEnumerator?.nextObject() as? String {
-            files.insert(fileName)
-        }
-        let name = ((imageFileName as NSString).lastPathComponent as NSString).deletingPathExtension
-        if let content = load(AssetContents.self, for: imageFileName) {
-            let contentFileNames = Set<String>(content.images.compactMap { $0.filename })
-            if contentFileNames.isEmpty {
-                printError(filePath: imageFileName, message: "Empty asset with name '\(name)'")
-            }
-            let notFoundFile = contentFileNames.subtracting(files)
-            for file in notFoundFile {
-                printError(filePath: imageFileName, message: "Not found file '\(file)' for Asset with name '\(name)'")
-            }
-        } else {
-            printError(filePath: imageFileName, message: "Empty folder for Asset with name '\(name)'")
         }
     }
 }
 
 // MARK: - detect unused Images
 
-print("source folder: \(settings.sourcePath)")
+
 var usedImages: [String] = []
 var usedImagesFromSwiftGen: [String] = []
-
 let resourcesRegex = try! NSRegularExpression(pattern: #"<\bimage name="(.[A-z0-9]*)""#, options: [])
-// Search all using
-let sourceFileEnumerator = FileManager.default.enumerator(atPath: settings.sourcePath)
-while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
-    let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
-    let filePath = "\(settings.sourcePath)/\(sourceFileName)"
-    // checks the extension to source
-    if settings.sourcesExtensions.contains(fileExtension) {
-        if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
-            let range = NSRange(location: 0, length: (string as NSString).length)
-            sourcesRegex.forEach{ regex in
-                regex.pattern.enumerateMatches(
-                    in: string,
-                    options: [],
-                    range: range) { result, _, _ in
-                        addUsedImage(from: string, result: result, path: filePath, isSwiftGen: regex.isSwiftGen)
-                    }
+
+print("source folders: \(settings.relativeSourcePaths)")
+for relativeSourcePath in settings.relativeSourcePaths {
+    let sourcePath = settings.dir + relativeSourcePath
+    print("source path: \(sourcePath)")
+    // Search all using
+    let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
+    while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
+        let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
+        let filePath = "\(sourcePath)/\(sourceFileName)"
+        // checks the extension to source
+        if settings.sourcesExtensions.contains(fileExtension) {
+            if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                let range = NSRange(location: 0, length: (string as NSString).length)
+                sourcesRegex.forEach{ regex in
+                    regex.pattern.enumerateMatches(
+                        in: string,
+                        options: [],
+                        range: range) { result, _, _ in
+                            addUsedImage(from: string, result: result, path: filePath, isSwiftGen: regex.isSwiftGen)
+                        }
+                }
             }
-        }
-    } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
-        if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
-            let range = NSRange(location: 0, length: (string as NSString).length)
-            resourcesRegex.enumerateMatches(in: string,
-                                    options: [],
-                                    range: range) { result, _, _ in
-                addUsedImage(from: string, result: result, path: filePath)
+        } else if settings.resourcesExtensions.contains(fileExtension) { // checks the extension to resource
+            if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                let range = NSRange(location: 0, length: (string as NSString).length)
+                resourcesRegex.enumerateMatches(in: string,
+                                                options: [],
+                                                range: range) { result, _, _ in
+                    addUsedImage(from: string, result: result, path: filePath)
+                }
             }
         }
     }
@@ -1236,9 +1266,9 @@ if settings.isCheckingDuplicatedByContent {
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
                imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
-                let imageFilePath1 = "\(settings.imagesPath)/\(file1.path)"
+                let imageFilePath1 = "\(imageInfo1.dir)/\(file1.path)"
                 let file2 = imageInfo2.files.first!
-                let imageFilePath2 = "\(settings.imagesPath)/\(file2.path)"
+                let imageFilePath2 = "\(imageInfo2.dir)/\(file2.path)"
                 printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }
