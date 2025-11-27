@@ -177,6 +177,14 @@ extension Settings {
         }
     }
 
+    private func pathWithoutSlash(_ path: String) -> String {
+        var result = path
+        if result.hasSuffix("/") {
+            result.removeLast()
+        }
+        return result
+    }
+
     fileprivate mutating func load(dir: String, ext: String) {
 
         let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
@@ -244,19 +252,19 @@ extension Settings {
                 }
             case .relativeImagesPath:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(value)
+                    relativeImagesPaths.append(pathWithoutSlash(value))
                 }
             case .relativeImagesPaths:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(value)
+                    relativeImagesPaths.append(pathWithoutSlash(value))
                 }
             case .relativeSourcePath:
                 if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(value)
+                    relativeSourcePaths.append(pathWithoutSlash(value))
                 }
             case .relativeSourcePaths:
                 if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(value)
+                    relativeSourcePaths.append(pathWithoutSlash(value))
                 }
             case .usingTypes:
                 if let value = currentValue, value.isEmpty == false {

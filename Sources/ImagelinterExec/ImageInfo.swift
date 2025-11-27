@@ -28,7 +28,7 @@ struct FolderContents: Decodable {
 }
 
 func load<T: Decodable>(_ type: T.Type, dir: String, for folder: String) -> T? {
-    let contentsPath = dir + folder + "/Contents.json"
+    let contentsPath = dir + "/" + folder + "/Contents.json"
     guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
         return nil
     }
@@ -49,7 +49,6 @@ class ImageInfo {
         init(path: String, scale: Int?) {
             self.path = path
             self.scale = scale
-            print("File path: \(path)")
         }
     }
 
