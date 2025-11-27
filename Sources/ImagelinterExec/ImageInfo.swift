@@ -27,8 +27,8 @@ struct FolderContents: Decodable {
     }
 }
 
-func load<T: Decodable>(_ type: T.Type, for folder: String) -> T? {
-    let contentsPath = settings.imagesPath + "/" + folder + "/Contents.json"
+func load<T: Decodable>(_ type: T.Type, dir: String, for folder: String) -> T? {
+    let contentsPath = dir + folder + "/Contents.json"
     guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
         return nil
     }
@@ -41,9 +41,16 @@ let assetExtension = ".xcassets"
 
 class ImageInfo {
     struct File {
+        // needs concatinate with ImageInfo.dir
         let path: String
         // if nil that vector-universal
         let scale: Int?
+
+        init(path: String, scale: Int?) {
+            self.path = path
+            self.scale = scale
+            print("File path: \(path)")
+        }
     }
 
     enum ImageType {
@@ -54,13 +61,15 @@ class ImageInfo {
     }
 
     let name: String
+    // dir for current Asset
+    let dir: String
     var files: [File]
 
     var hash: String = ""
 
     var type: ImageType = .undefined
 
-    func setAndCheckType(newType: ImageType, filePath: String){
+    private func setAndCheckType(newType: ImageType, filePath: String){
         if type != .undefined, newType != type {
             printError(
                 filePath: filePath,
@@ -72,12 +81,13 @@ class ImageInfo {
         }
     }
 
-    init(name: String, path: String, scale: Int?) {
+    private init(name: String, dir: String, path: String, scale: Int?) {
         self.name = name
+        self.dir = dir
         files = [File(path: path, scale: scale)]
     }
 
-    static func processFound(path: String) -> ImageInfo? {
+    static func processFound(dir: String, path: String) -> ImageInfo? {
         var isAsset = false
         var folderName = ""
         let components = path.split(separator: "/")
@@ -90,25 +100,25 @@ class ImageInfo {
                 }
                 if component.hasSuffix(imagesetExtension) { // it is asset
                     let name = (component as NSString).substring(to: component.count - imagesetExtension.count)
-                    if let contents = load(AssetContents.self, for: components[0..<index + 1].joined(separator: "/")) {
+                    if let contents = load(AssetContents.self, dir: dir, for: components[0..<index + 1].joined(separator: "/")) {
                         let fileName = (path as NSString).lastPathComponent
                         let scale: Int? = contents.images.reduce(into: nil) { result, image in
                             if image.filename == fileName {
                                 result = image.scale?.scale
                             }
                         }
-                        return processFound(name: folderName + name, path: path, scale: scale)
+                        return processFound(name: folderName + name, dir: dir, path: path, scale: scale)
                     } else {
                         printError(filePath: path, message: "Not readed scale information. Found for image '\(name)'", isWarning: true)
 
-                        return processFound(name: folderName + name, path: path, scale: nil)
+                        return processFound(name: folderName + name, dir: dir, path: path, scale: nil)
                     }
                     //break
                 } else if component.hasSuffix(appIconExtension) { // it is Application icon and we will ignore it
                     return nil
                 } else {
                     // It is folder, but way???
-                    if let contents = load(FolderContents.self, for: components[0..<index + 1].joined(separator: "/")) {
+                    if let contents = load(FolderContents.self, dir: dir, for: components[0..<index + 1].joined(separator: "/")) {
                         if contents.properties?.isNamespace ?? false {
                             folderName += component + "/"
                         }
@@ -118,17 +128,17 @@ class ImageInfo {
         }
         if !isAsset {
             let name = nameOfImageFile(path: path)
-            return processFound(name: name.path, path: path, scale: name.scale)
+            return processFound(name: name.path, dir: dir, path: path, scale: name.scale)
         }
         return nil
     }
 
-    private static func processFound(name: String, path: String, scale: Int?) -> ImageInfo {
+    private static func processFound(name: String, dir: String, path: String, scale: Int?) -> ImageInfo {
         if let existImage = foundedImages[name] {
             existImage.files.append(File(path: path, scale: scale))
             return existImage
         } else {
-            let result = ImageInfo(name: name, path: path, scale: scale)
+            let result = ImageInfo(name: name, dir: dir, path: path, scale: scale)
             foundedImages[name] = result
             if isSwiftGen {
                 foundedSwiftGenMirrorImages[name.swiftGenKey()] = name
@@ -137,11 +147,11 @@ class ImageInfo {
         }
     }
 
-    static func nameOfImageFile(path: String) -> (path: String, scale: Int) {
+    private static func nameOfImageFile(path: String) -> (path: String, scale: Int) {
         return pathOfImageFile(path: (path as NSString).lastPathComponent)
     }
 
-    static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
+    private static func pathOfImageFile(path: String) -> (path: String, scale: Int) {
         var name = (path as NSString).deletingPathExtension
         var scale = 1
         for imageScale in allImageScales {
@@ -155,11 +165,11 @@ class ImageInfo {
         return (name, scale)
     }
 
-    static func isTheSameImage(path1: String, path2: String) -> Bool {
+    private static func isTheSameImage(path1: String, path2: String) -> Bool {
         pathOfImageFile(path: path1).path == pathOfImageFile(path: path2).path
     }
 
-    var assetPath: String? {
+    private var assetPath: String? {
         var result: String?
         for imageFile in files {
             let components = imageFile.path.split(separator: "/")
@@ -186,7 +196,7 @@ class ImageInfo {
 
     func error(with message: String) {
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             printError(filePath: imageFilePath, message: message)
             guard settings.isAllFilesErrorShowing else {
                 break
@@ -212,13 +222,13 @@ class ImageInfo {
         }
     }
 
-    static let svgSearchWidthHeightRegex = try! NSRegularExpression(pattern: #"<svg.*width="(.*?)p?t?".*height="(.*?)p?t?".*>"#, options: [])
-    static let svgSearchHeightWidthRegex = try! NSRegularExpression(pattern: #"<svg.*height="(.*?)p?t?".*width="(.*?)p?t?".*>"#, options: [])
+    private static let svgSearchWidthHeightRegex = try! NSRegularExpression(pattern: #"<svg.*width="(.*?)p?t?".*height="(.*?)p?t?".*>"#, options: [])
+    private static let svgSearchHeightWidthRegex = try! NSRegularExpression(pattern: #"<svg.*height="(.*?)p?t?".*width="(.*?)p?t?".*>"#, options: [])
 
     func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath) {
                 let pixelSize = image.pixelSize ?? NSSize()
                 let size = image.size
@@ -352,7 +362,7 @@ class ImageInfo {
         var maxScale = 0
         var result: Data?
         for file in files {
-            let imageFilePath = "\(settings.imagesPath)/\(file.path)"
+            let imageFilePath = "\(dir)/\(file.path)"
             if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {

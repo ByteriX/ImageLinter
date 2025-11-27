@@ -1,6 +1,6 @@
 
 isEnabled: true
-relativeImagesPath: /Sources/Images/Resources/Error
+relativeImagesPath: /
 relativeSourcePath: /
 relativeSourcePaths:
   - /Sources1

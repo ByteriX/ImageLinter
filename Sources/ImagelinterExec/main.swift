@@ -134,8 +134,6 @@ extension CGImage {
     }
 }
 
-print("image folder: \(settings.imagesPath)")
-
 func fileSize(fromPath path: String) -> UInt64 {
     let size: Any? = try? FileManager.default.attributesOfItem(atPath: path)[FileAttributeKey.size]
     guard let fileSize = size as? UInt64 else {
@@ -149,9 +147,6 @@ func covertToString(fileSize: UInt64) -> String {
     ByteCountFormatter().string(fromByteCount: Int64(fileSize))
 }
 
-
-
-let imageFileEnumerator = FileManager.default.enumerator(atPath: settings.imagesPath)
 let pdfRasterPattern = #".*\/[Ii]mage.*"#
 let pdfRasterRegex = try? NSRegularExpression(pattern: pdfRasterPattern, options: [])
 let svgRasterPattern = #".*<image .*"#
@@ -160,70 +155,76 @@ let svgRasterRegex = try? NSRegularExpression(pattern: svgRasterPattern, options
 var foundedImages: [String: ImageInfo] = [:]
 var foundedSwiftGenMirrorImages: [String: String] = [:]
 
-while let imageFileName = imageFileEnumerator?.nextObject() as? String {
-    let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
-    if imageSetExtensions.contains(fileExtension) {
-        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
+print("image folders: \(settings.relativeImagesPaths)")
 
-        if let imageInfo = ImageInfo.processFound(path: imageFileName){
+for relativeImagesPath in settings.relativeImagesPaths {
+    let imagesPath = settings.dir + relativeImagesPath
+    let imageFileEnumerator = FileManager.default.enumerator(atPath: imagesPath)
 
-            let fileSize = fileSize(fromPath: imageFilePath)
+    while let imageFileName = imageFileEnumerator?.nextObject() as? String {
+        let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
+        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        if imageSetExtensions.contains(fileExtension) {
 
-            if settings.vectorExtensions.contains(fileExtension) {
-                if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
-                    printError(
-                        filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxVectorFileSize)). Found for image '\(imageInfo.name)'"
-                    )
-                }
+            if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
 
-                if settings.isCheckingPdfVector || settings.isCheckingSvgVector {
-                    if !FileManager.default.isReadableFile(atPath: imageFilePath) {
-                        printError(filePath: imageFilePath, message: "Can not read file with path: '\(imageFilePath)'")
-                    } else {
-                        do {
-                            let string = try String(contentsOfFile: imageFilePath, encoding: .isoLatin1)
+                let fileSize = fileSize(fromPath: imageFilePath)
 
-                            let range = NSRange(location: 0, length: string.count)
-                            if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                                printError(filePath: imageFilePath, message: "PDF File is not a pure vector. Found for image '\(imageInfo.name)'")
+                if settings.vectorExtensions.contains(fileExtension) {
+                    if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
+                        printError(
+                            filePath: imageFilePath,
+                            message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxVectorFileSize)). Found for image '\(imageInfo.name)'"
+                        )
+                    }
+
+                    if settings.isCheckingPdfVector || settings.isCheckingSvgVector {
+                        if !FileManager.default.isReadableFile(atPath: imageFilePath) {
+                            printError(filePath: imageFilePath, message: "Can not read file with path: '\(imageFilePath)'")
+                        } else {
+                            do {
+                                let string = try String(contentsOfFile: imageFilePath, encoding: .isoLatin1)
+
+                                let range = NSRange(location: 0, length: string.count)
+                                if settings.isCheckingPdfVector, pdfRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                    printError(filePath: imageFilePath, message: "PDF File is not a pure vector. Found for image '\(imageInfo.name)'")
+                                }
+                                if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
+                                    printError(filePath: imageFilePath, message: "SVG File is not a pure vector. Found for image '\(imageInfo.name)'")
+                                }
+                            } catch let error {
+                                printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)' with error: `\(error.localizedDescription)`")
                             }
-                            if settings.isCheckingSvgVector, svgRasterRegex?.firstMatch(in: string, options: [], range: range) != nil {
-                                printError(filePath: imageFilePath, message: "SVG File is not a pure vector. Found for image '\(imageInfo.name)'")
-                            }
-                        } catch let error {
-                            printError(filePath: imageFilePath, message: "Can not parse Vector file. Found for image '\(imageInfo.name)' with error: `\(error.localizedDescription)`")
                         }
                     }
+                } else if settings.rastorExtensions.contains(fileExtension) {
+                    if settings.isCheckingFileSize, fileSize > settings.maxRastorFileSize {
+                        printError(
+                            filePath: imageFilePath,
+                            message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxRastorFileSize)). Found for image '\(imageInfo.name)'"
+                        )
+                    }
                 }
-            } else if settings.rastorExtensions.contains(fileExtension) {
-                if settings.isCheckingFileSize, fileSize > settings.maxRastorFileSize {
-                    printError(
-                        filePath: imageFilePath,
-                        message: "File size (\(covertToString(fileSize: fileSize))) of the image is very biggest. Max file size is \(covertToString(fileSize: settings.maxRastorFileSize)). Found for image '\(imageInfo.name)'"
-                    )
+            }
+        } else if imageFileName.hasSuffix(imagesetExtension) {
+            let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
+            var files: Set<String> = []
+            while let fileName = fileEnumerator?.nextObject() as? String {
+                files.insert(fileName)
+            }
+            let name = ((imageFileName as NSString).lastPathComponent as NSString).deletingPathExtension
+            if let content = load(AssetContents.self, dir: imagesPath, for: imageFileName) {
+                let contentFileNames = Set<String>(content.images.compactMap { $0.filename })
+                if contentFileNames.isEmpty {
+                    printError(filePath: imageFileName, message: "Empty asset with name '\(name)'")
                 }
+                let notFoundFile = contentFileNames.subtracting(files)
+                for file in notFoundFile {
+                    printError(filePath: imageFileName, message: "Not found file '\(file)' for Asset with name '\(name)'")
+                }
+            } else {
+                printError(filePath: imageFileName, message: "Empty folder for Asset with name '\(name)'")
             }
-        }
-    } else if imageFileName.hasSuffix(imagesetExtension) {
-        let imageFilePath = "\(settings.imagesPath)/\(imageFileName)"
-        let fileEnumerator = FileManager.default.enumerator(atPath: imageFilePath)
-        var files: Set<String> = []
-        while let fileName = fileEnumerator?.nextObject() as? String {
-            files.insert(fileName)
-        }
-        let name = ((imageFileName as NSString).lastPathComponent as NSString).deletingPathExtension
-        if let content = load(AssetContents.self, for: imageFileName) {
-            let contentFileNames = Set<String>(content.images.compactMap { $0.filename })
-            if contentFileNames.isEmpty {
-                printError(filePath: imageFileName, message: "Empty asset with name '\(name)'")
-            }
-            let notFoundFile = contentFileNames.subtracting(files)
-            for file in notFoundFile {
-                printError(filePath: imageFileName, message: "Not found file '\(file)' for Asset with name '\(name)'")
-            }
-        } else {
-            printError(filePath: imageFileName, message: "Empty folder for Asset with name '\(name)'")
         }
     }
 }
@@ -326,9 +327,9 @@ if settings.isCheckingDuplicatedByContent {
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
                imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
-                let imageFilePath1 = "\(settings.imagesPath)/\(file1.path)"
+                let imageFilePath1 = "\(imageInfo1.dir)/\(file1.path)"
                 let file2 = imageInfo2.files.first!
-                let imageFilePath2 = "\(settings.imagesPath)/\(file2.path)"
+                let imageFilePath2 = "\(imageInfo2.dir)/\(file2.path)"
                 printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }

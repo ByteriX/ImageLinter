@@ -12,15 +12,10 @@ struct Settings {
     /// For enable or disable this script
     var isEnabled = true
 
-    var dir: String = defaultDir
+    private(set) var dir: String = defaultDir
 
-    /// Path to folder with images files. For example "/YouProject/Resources/Images"
-    private var relativeImagesPath = "" {
-        didSet {
-            imagesPath = dir + relativeImagesPath
-        }
-    }
-    var imagesPath = ""
+    /// Multipath  to folders with images you actually use in your project. For Example ["/YouProject/Resources/Images",  "/OtherProject"]
+    private(set) var relativeImagesPaths: [String] = []
 
     /// Multipath  of the sources folders which will used in searching for images you actually use in your project. For Example ["/YouProject/Source",  "/OtherProject"]
     var relativeSourcePaths: [String] = []
@@ -99,10 +94,18 @@ extension Settings {
 
     private static let extensions = ["yml", "yaml"]
     private static let fileName = "imagelinter"
-    private static let defaultDir = FileManager.default.currentDirectoryPath
+    private static let defaultDir: String = {
+        var result = FileManager.default.currentDirectoryPath
+        if !result.hasSuffix("/") {
+            result = result + "/"
+        }
+        print("defaultDir: \(result)")
+        return result
+    }()
 
     private enum Key: String {
         case isEnabled
+        case relativeImagesPaths
         case relativeImagesPath
         case relativeSourcePaths
         case relativeSourcePath
@@ -240,8 +243,12 @@ extension Settings {
                     self.isEnabled = isEnabled
                 }
             case .relativeImagesPath:
-                if let relativeImagesPath = currentValue {
-                    self.relativeImagesPath = relativeImagesPath
+                if let value = currentValue, value != "" {
+                    relativeImagesPaths.append(value)
+                }
+            case .relativeImagesPaths:
+                if let value = currentValue, value != "" {
+                    relativeImagesPaths.append(value)
                 }
             case .relativeSourcePath:
                 if let value = currentValue, value != "" {
