@@ -163,7 +163,7 @@ for relativeImagesPath in settings.relativeImagesPaths {
 
     while let imageFileName = imageFileEnumerator?.nextObject() as? String {
         let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
-        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        let imageFilePath = imagesPath + imageFileName
         if imageSetExtensions.contains(fileExtension) {
 
             if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
@@ -244,7 +244,7 @@ for relativeSourcePath in settings.relativeSourcePaths {
     let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
     while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
         let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
-        let filePath = "\(sourcePath)/\(sourceFileName)"
+        let filePath = sourcePath + sourceFileName
         // checks the extension to source
         if settings.sourcesExtensions.contains(fileExtension) {
             if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
@@ -327,9 +327,9 @@ if settings.isCheckingDuplicatedByContent {
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
                imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
-                let imageFilePath1 = "\(imageInfo1.dir)/\(file1.path)"
+                let imageFilePath1 = imageInfo1.dir + file1.path
                 let file2 = imageInfo2.files.first!
-                let imageFilePath2 = "\(imageInfo2.dir)/\(file2.path)"
+                let imageFilePath2 = imageInfo2.dir + file2.path
                 printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }
