@@ -94,14 +94,7 @@ extension Settings {
 
     private static let extensions = ["yml", "yaml"]
     private static let fileName = "imagelinter"
-    private static let defaultDir: String = {
-        var result = FileManager.default.currentDirectoryPath
-        if !result.hasSuffix("/") {
-            result = result + "/"
-        }
-        print("defaultDir: \(result)")
-        return result
-    }()
+    private static let defaultDir: String = pathWithSlash(FileManager.default.currentDirectoryPath)
 
     private enum Key: String {
         case isEnabled
@@ -177,10 +170,10 @@ extension Settings {
         }
     }
 
-    private func pathWithoutSlash(_ path: String) -> String {
+    private static func pathWithSlash(_ path: String) -> String {
         var result = path
-        if result.hasSuffix("/") {
-            result.removeLast()
+        if !result.hasSuffix("/") {
+            result = result + "/"
         }
         return result
     }
@@ -250,21 +243,13 @@ extension Settings {
                 if let value = currentValue, let isEnabled = Bool(value) {
                     self.isEnabled = isEnabled
                 }
-            case .relativeImagesPath:
+            case .relativeImagesPath, .relativeImagesPaths:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(pathWithoutSlash(value))
+                    relativeImagesPaths.append(Self.pathWithSlash(value))
                 }
-            case .relativeImagesPaths:
+            case .relativeSourcePath, .relativeSourcePaths:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(pathWithoutSlash(value))
-                }
-            case .relativeSourcePath:
-                if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(pathWithoutSlash(value))
-                }
-            case .relativeSourcePaths:
-                if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(pathWithoutSlash(value))
+                    relativeSourcePaths.append(Self.pathWithSlash(value))
                 }
             case .usingTypes:
                 if let value = currentValue, value.isEmpty == false {
