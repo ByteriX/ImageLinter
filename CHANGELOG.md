@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.2.1] - 2025-11-29
+
+#### Added
+
+- new case .uiKitLiteral for support image literals.
+- an example to use image literal.
+
 ## [2.2.0] - 2025-11-27
 
 #### Added
