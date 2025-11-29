@@ -65,6 +65,7 @@ You need to add a settings file named `imagelinter.yaml` or/and `imagelinter.yml
 imagesPath and sourcePath are calculated from dir of this package. 
 
 Supports more settings files with rewrite properties with priority: first a `target` then `the root of library `dir`, first `imagelinter.yaml` then `imagelinter.yml`.
+If you want to have a custom path to settings file, you can use `--settingsPath [path to your imagelinter.yaml or imagelinter.yml file]` command line param from script call only on build phase. In the plugin this would be set to target dirrectory all time.
 
 ### Example of Settings file format
 
