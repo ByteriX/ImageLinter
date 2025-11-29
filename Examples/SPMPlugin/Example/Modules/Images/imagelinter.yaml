@@ -7,6 +7,7 @@ relativeSourcePaths:
   - /Sources2
 usingTypes:
   - case: uiKit
+  - case: uiKitLiteral
   - case: swiftUI
   - case: swiftGen
     enumName: Asset

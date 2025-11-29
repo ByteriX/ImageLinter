@@ -24,6 +24,7 @@ struct Settings {
     enum UsingType {
         case swiftUI
         case uiKit
+        case uiKitLiteral
         case swiftGen(enumName: String = "Asset")
         case custom(pattern: String, isSwiftGen: Bool)
     }
@@ -32,7 +33,8 @@ struct Settings {
     var usingTypes: [UsingType] = [
         .swiftGen(),
         .swiftUI,
-        .uiKit
+        .uiKit,
+        .uiKitLiteral
     ]
 
     /**
@@ -136,6 +138,7 @@ extension Settings {
         enum UsingType: String {
             case swiftUI
             case uiKit
+            case uiKitLiteral
             case swiftGen
             case custom
         }
@@ -260,6 +263,8 @@ extension Settings {
                                 self.usingTypes.append(.swiftUI)
                             case .uiKit:
                                 self.usingTypes.append(.uiKit)
+                            case .uiKitLiteral:
+                                self.usingTypes.append(.uiKitLiteral)
                             case .swiftGen:
                                 guard lineIndex < lines.count else {
                                     break
