@@ -22,7 +22,7 @@ public struct ContentView: View {
                 Image(uiImage: image)
             }
 
-            Image("checkSVG")
+            Image(uiImage: #imageLiteral(resourceName: "checkSVG"))
 
             Image("NotFoundedImage")
 

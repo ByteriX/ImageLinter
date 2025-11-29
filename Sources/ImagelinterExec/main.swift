@@ -41,6 +41,8 @@ for usingType in settings.usingTypes {
         addSourceRegexPattern(pattern: #"\bImage\(\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .uiKit:
         addSourceRegexPattern(pattern: #"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#, isSwiftGen: false)
+    case .uiKitLiteral:
+        addSourceRegexPattern(pattern: ##"\#imageLiteral\(\s*resourceName:\s*"(.*)"\s*\)"##, isSwiftGen: false)
     case .swiftGen(let enumName):
         addSourceRegexPattern(pattern: enumName +
                 #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage|\s*\.name)"#, isSwiftGen: true)
