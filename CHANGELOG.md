@@ -7,8 +7,9 @@ Any significant changes made to this project will be documented in this file.
 
 #### Added
 
-- new case .uiKitLiteral for support image literals.
+- #13 new case .uiKitLiteral for support image literals.
 - an example to use image literal.
+- #14 description about --settingsPath param to Readme.
 
 ## [2.2.0] - 2025-11-27
 
