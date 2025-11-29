@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 2.2.0
+ version 2.2.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2025 ByteriX. All rights reserved.
@@ -109,7 +109,7 @@ struct FolderContents: Decodable {
 }
 
 func load<T: Decodable>(_ type: T.Type, dir: String, for folder: String) -> T? {
-    let contentsPath = dir + "/" + folder + "/Contents.json"
+    let contentsPath = dir + folder + "/Contents.json"
     guard let contentsData = NSData(contentsOfFile: contentsPath) as? Data else {
         return nil
     }
@@ -276,7 +276,7 @@ class ImageInfo {
 
     func error(with message: String) {
         for file in files {
-            let imageFilePath = "\(dir)/\(file.path)"
+            let imageFilePath = dir + file.path
             printError(filePath: imageFilePath, message: message)
             guard settings.isAllFilesErrorShowing else {
                 break
@@ -308,7 +308,7 @@ class ImageInfo {
     func checkImageSizeAndDetectType() {
         var scaledSize: (width: Int, height: Int)?
         for file in files {
-            let imageFilePath = "\(dir)/\(file.path)"
+            let imageFilePath = dir + file.path
             if let image = NSImage(contentsOfFile: imageFilePath) {
                 let pixelSize = image.pixelSize ?? NSSize()
                 let size = image.size
@@ -442,7 +442,7 @@ class ImageInfo {
         var maxScale = 0
         var result: Data?
         for file in files {
-            let imageFilePath = "\(dir)/\(file.path)"
+            let imageFilePath = dir + file.path
             if let image = NSImage(contentsOfFile: imageFilePath), let pixelSize = image.pixelSize {
                 let size = image.size
                 if pixelSize.height == 0, pixelSize.width == 0 {
@@ -504,6 +504,7 @@ struct Settings {
     enum UsingType {
         case swiftUI
         case uiKit
+        case uiKitLiteral
         case swiftGen(enumName: String = "Asset")
         case custom(pattern: String, isSwiftGen: Bool)
     }
@@ -512,7 +513,8 @@ struct Settings {
     var usingTypes: [UsingType] = [
         .swiftGen(),
         .swiftUI,
-        .uiKit
+        .uiKit,
+        .uiKitLiteral
     ]
 
     /**
@@ -574,14 +576,7 @@ extension Settings {
 
     private static let extensions = ["yml", "yaml"]
     private static let fileName = "imagelinter"
-    private static let defaultDir: String = {
-        var result = FileManager.default.currentDirectoryPath
-        if !result.hasSuffix("/") {
-            result = result + "/"
-        }
-        print("defaultDir: \(result)")
-        return result
-    }()
+    private static let defaultDir: String = pathWithSlash(FileManager.default.currentDirectoryPath)
 
     private enum Key: String {
         case isEnabled
@@ -623,6 +618,7 @@ extension Settings {
         enum UsingType: String {
             case swiftUI
             case uiKit
+            case uiKitLiteral
             case swiftGen
             case custom
         }
@@ -657,10 +653,10 @@ extension Settings {
         }
     }
 
-    private func pathWithoutSlash(_ path: String) -> String {
+    private static func pathWithSlash(_ path: String) -> String {
         var result = path
-        if result.hasSuffix("/") {
-            result.removeLast()
+        if !result.hasSuffix("/") {
+            result = result + "/"
         }
         return result
     }
@@ -730,21 +726,13 @@ extension Settings {
                 if let value = currentValue, let isEnabled = Bool(value) {
                     self.isEnabled = isEnabled
                 }
-            case .relativeImagesPath:
+            case .relativeImagesPath, .relativeImagesPaths:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(pathWithoutSlash(value))
+                    relativeImagesPaths.append(Self.pathWithSlash(value))
                 }
-            case .relativeImagesPaths:
+            case .relativeSourcePath, .relativeSourcePaths:
                 if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(pathWithoutSlash(value))
-                }
-            case .relativeSourcePath:
-                if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(pathWithoutSlash(value))
-                }
-            case .relativeSourcePaths:
-                if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(pathWithoutSlash(value))
+                    relativeSourcePaths.append(Self.pathWithSlash(value))
                 }
             case .usingTypes:
                 if let value = currentValue, value.isEmpty == false {
@@ -755,6 +743,8 @@ extension Settings {
                                 self.usingTypes.append(.swiftUI)
                             case .uiKit:
                                 self.usingTypes.append(.uiKit)
+                            case .uiKitLiteral:
+                                self.usingTypes.append(.uiKitLiteral)
                             case .swiftGen:
                                 guard lineIndex < lines.count else {
                                     break
@@ -980,6 +970,8 @@ for usingType in settings.usingTypes {
         addSourceRegexPattern(pattern: #"\bImage\(\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .uiKit:
         addSourceRegexPattern(pattern: #"\bUIImage\(\s*named:\s*"(.*)"\s*\)"#, isSwiftGen: false)
+    case .uiKitLiteral:
+        addSourceRegexPattern(pattern: ##"\#imageLiteral\(\s*resourceName:\s*"(.*)"\s*\)"##, isSwiftGen: false)
     case .swiftGen(let enumName):
         addSourceRegexPattern(pattern: enumName +
                 #"\s*\.((?:\.*[A-Z]{1}[A-z0-9]*)*)\s*((?:\.*[a-z]{1}[A-z0-9]*))(?:\s*\.image|\s*\.uiImage|\s*\.name)"#, isSwiftGen: true)
@@ -1102,7 +1094,7 @@ for relativeImagesPath in settings.relativeImagesPaths {
 
     while let imageFileName = imageFileEnumerator?.nextObject() as? String {
         let fileExtension = (imageFileName as NSString).pathExtension.uppercased()
-        let imageFilePath = "\(imagesPath)/\(imageFileName)"
+        let imageFilePath = imagesPath + imageFileName
         if imageSetExtensions.contains(fileExtension) {
 
             if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
@@ -1183,7 +1175,7 @@ for relativeSourcePath in settings.relativeSourcePaths {
     let sourceFileEnumerator = FileManager.default.enumerator(atPath: sourcePath)
     while let sourceFileName = sourceFileEnumerator?.nextObject() as? String {
         let fileExtension = (sourceFileName as NSString).pathExtension.uppercased()
-        let filePath = "\(sourcePath)/\(sourceFileName)"
+        let filePath = sourcePath + sourceFileName
         // checks the extension to source
         if settings.sourcesExtensions.contains(fileExtension) {
             if let string = try? String(contentsOfFile: filePath, encoding: .utf8) {
@@ -1266,9 +1258,9 @@ if settings.isCheckingDuplicatedByContent {
             if imageInfo1.hash.isEmpty == false, imageInfo1.hash == imageInfo2.hash,
                imageInfo1.calculateData() == imageInfo2.calculateData() {
                 let file1 = imageInfo1.files.first!
-                let imageFilePath1 = "\(imageInfo1.dir)/\(file1.path)"
+                let imageFilePath1 = imageInfo1.dir + file1.path
                 let file2 = imageInfo2.files.first!
-                let imageFilePath2 = "\(imageInfo2.dir)/\(file2.path)"
+                let imageFilePath2 = imageInfo2.dir + file2.path
                 printError(filePath: imageFilePath1, message: "image '\(imageInfo1.name)' duplicate by content '\(imageInfo2.name)' with path '\(imageFilePath2)'")
             }
         }
