@@ -80,6 +80,7 @@ relativeSourcePaths:
   - /Module2/src
 usingTypes:
   - case: uiKit
+  - case: uiKitLiteral
   - case: swiftUI
   - case: swiftGen
     enumName: Asset
