@@ -90,6 +90,13 @@ usingTypes:
     isSwiftGen: true
   - case: custom
     pattern: "(.*)".image
+checkingNameTypes:
+  - case: camelCase
+  - case: firstUpperCase
+    message: First case should be uppered
+  - case: custom
+    pattern: ^[a-zA-Z][a-zA-Z0-9]*$
+    message: Camel case without folder
 ignoredUnusedImages:
   - temp
 ignoredUndefinedImages:
