@@ -20,7 +20,7 @@ struct Settings {
     /// Multipath  of the sources folders which will used in searching for images you actually use in your project. For Example ["/YouProject/Source",  "/OtherProject"]
     var relativeSourcePaths: [String] = []
 
-    /// Using localizations type from code. If you use custom you need define regex pattern
+    /// Using images type from code. If you use custom you need define regex pattern
     enum UsingType {
         case swiftUI
         case uiKit
@@ -36,6 +36,16 @@ struct Settings {
         .uiKit,
         .uiKitLiteral
     ]
+
+    enum CheckingNameType {
+        case firstUpperCase(message: String = "Name should start with uppercase")
+        case camelCase(message: String = "Camel case support only")
+        case sneak_case (message: String = "Sneak case support only")
+        case kebab_case (message: String = "Kebab case support only")
+        case custom (pattern: String, message: String = "Custom name checking")
+    }
+
+    var checkingNameTypes: [CheckingNameType] = []
 
     /**
      If you want to exclude unused image from checking, you can define they this
@@ -106,6 +116,7 @@ extension Settings {
         case relativeSourcePath
 
         case usingTypes
+        case checkingNameTypes
 
         case ignoredUnusedImages
         case ignoredUndefinedImages
@@ -141,6 +152,34 @@ extension Settings {
             case uiKitLiteral
             case swiftGen
             case custom
+        }
+
+        enum CheckingNameType: String {
+            case firstUpperCase
+            case camelCase
+            case sneak_case
+            case kebab_case
+            case custom
+
+            func convert(message: String?) -> Settings.CheckingNameType {
+                if let message {
+                    switch self {
+                        case .firstUpperCase: return .firstUpperCase(message: message)
+                        case .camelCase: return .camelCase(message: message)
+                        case .sneak_case: return .sneak_case(message: message)
+                        case .kebab_case: return .kebab_case(message: message)
+                        case .custom: return .custom(pattern: "", message: message)
+                    }
+                } else {
+                    switch self {
+                        case .firstUpperCase: return .firstUpperCase()
+                        case .camelCase: return .camelCase()
+                        case .sneak_case: return .sneak_case()
+                        case .kebab_case: return .kebab_case()
+                        case .custom: return .custom(pattern: "")
+                    }
+                }
+            }
         }
 
         enum TargetPlatform: String {
@@ -306,6 +345,60 @@ extension Settings {
                     }
                 } else if isStartKey {
                     self.usingTypes = []
+                }
+            case .checkingNameTypes:
+                if let value = currentValue, value.isEmpty == false {
+                    if let object = Self.getObject(line: value), object.name == "case" {
+                        if let checkingNameType = Key.CheckingNameType(rawValue: object.value) {
+                            switch checkingNameType {
+                            case .firstUpperCase, .camelCase, .sneak_case, .kebab_case:
+                                guard lineIndex < lines.count else {
+                                    break
+                                }
+                                let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var customMessage: String?
+
+                                if line.hasPrefix("#") == false,
+                                   let object = Self.getObject(line: line),
+                                   object.name == "message"
+                                {
+                                    lineIndex += 1
+                                    customMessage = object.value
+                                }
+                                self.checkingNameTypes.append(checkingNameType.convert(message: customMessage))
+                            case .custom:
+                                guard lineIndex < lines.count else {
+                                    break
+                                }
+                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var customPattern: String?
+                                var customMessage: String?
+
+                                // TODO: # needs just continue
+                                while line.hasPrefix("#") == false,
+                                   let object = Self.getObject(line: line),
+                                   object.name == "pattern" || object.name == "message"
+                                {
+                                    lineIndex += 1
+                                    if object.name == "pattern" {
+                                        customPattern = object.value
+                                    } else if object.name == "message" {
+                                        customMessage = object.value
+                                    }
+                                    line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                }
+                                if let customPattern {
+                                    if let customMessage, customMessage.isEmpty == false {
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern, message: customMessage))
+                                    } else {
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if isStartKey {
+                    self.checkingNameTypes = []
                 }
             case .ignoredUnusedImages:
                 if let value = currentValue, value.isEmpty == false {

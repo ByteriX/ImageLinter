@@ -19,6 +19,10 @@ usingTypes:
     isSwiftGen: true
     - case: custom
     pattern: "(.*)".name
+checkingNameTypes:
+  - case: camelCase
+  - case: firstUpperCase
+    message: First case should be uppered
 ignoredUnusedImages:
   - temp
 ignoredUndefinedImages:

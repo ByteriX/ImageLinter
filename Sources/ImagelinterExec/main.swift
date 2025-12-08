@@ -50,6 +50,38 @@ for usingType in settings.usingTypes {
     }
 }
 
+struct CheckingNameRegexPattern {
+    let pattern: NSRegularExpression
+    let message: String
+}
+var checkingNameTypesRegex: [CheckingNameRegexPattern] = []
+
+private func addCheckingNameRegexPattern(pattern: String, message: String) {
+    print("addCheckingNameRegexPattern: \(pattern)")
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        printError(filePath: #file, message: "Not right pattern for regex: \(pattern)", line: #line)
+        return
+    }
+    checkingNameTypesRegex.append(CheckingNameRegexPattern(pattern: regex, message: message))
+}
+
+print("checkingNameTypes: \(settings.checkingNameTypes)")
+
+for checkingNameType in settings.checkingNameTypes {
+    switch checkingNameType {
+    case .firstUpperCase(let message):
+        addCheckingNameRegexPattern(pattern: #"^[A-Z].*$"#, message: message)
+    case .camelCase(let message):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-zA-Z0-9\/]*$"#, message: message)
+    case .sneak_case(let message):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9_\/]*$"#, message: message)
+    case .kebab_case(let message):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9\-\/]*$"#, message: message)
+    case .custom(let pattern, let message):
+        addCheckingNameRegexPattern(pattern: pattern, message: message)
+    }
+}
+
 let allImageScales = (1...3)
 var targetScales: Set<Int> = []
 for targetPlatform in settings.targetPlatforms {
@@ -319,6 +351,18 @@ for imageInfo in images {
         if let data = imageInfo.calculateData() {
             imageInfo.hash = "\(data.count)"
         }
+    }
+}
+
+for imageName in Set(foundedImages.keys).subtracting(settings.ignoredUnusedImages) {
+    var message = ""
+    for checkingNameTypeRegex in checkingNameTypesRegex {
+        if checkingNameTypeRegex.pattern.firstMatch(in: imageName, options: [], range: NSRange(location: 0, length: imageName.count)) == nil {
+            message += checkingNameTypeRegex.message + ". "
+        }
+    }
+    if message != "", let imageInfo = foundedImages[imageName] {
+        imageInfo.error(with: "Incorrect image name '\(imageInfo.name)': \(message)")
     }
 }
 
