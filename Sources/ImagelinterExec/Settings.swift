@@ -29,7 +29,7 @@ struct Settings {
         case custom(pattern: String, isSwiftGen: Bool)
     }
 
-    /// yuo can use many types
+    /// you can use many types of images usage
     var usingTypes: [UsingType] = [
         .swiftGen(),
         .swiftUI,
@@ -37,6 +37,7 @@ struct Settings {
         .uiKitLiteral
     ]
 
+    /// Patterns of checking of the image name
     enum CheckingNameType {
         case firstUpperCase(message: String = "Name should start with uppercase")
         case camelCase(message: String = "Camel case support only")
@@ -45,6 +46,7 @@ struct Settings {
         case custom (pattern: String, message: String = "Custom name checking")
     }
 
+    /// you can check image name with a set of patterns
     var checkingNameTypes: [CheckingNameType] = []
 
     /**

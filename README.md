@@ -95,8 +95,8 @@ checkingNameTypes:
   - case: firstUpperCase
     message: First case should be uppered
   - case: custom
-    pattern: ^[a-zA-Z][a-zA-Z0-9]*$
-    message: Camel case without folder
+    pattern: ^[a-zA-Z][a-zA-Z0-9]*_icon$
+    message: Camel case without folder and with suffix '_icon'
 ignoredUnusedImages:
   - temp
 ignoredUndefinedImages:

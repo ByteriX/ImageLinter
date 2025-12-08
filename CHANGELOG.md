@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.3.0] - 2025-12-09
+
+#### Added
+
+- #4 new supporting of image name checking.
+- checkingNameTypes set with cases: .firstUpperCase, .camelCase, .sneak_case, .kebab_case, .custom
+
 ## [2.2.1] - 2025-11-29
 
 #### Added
