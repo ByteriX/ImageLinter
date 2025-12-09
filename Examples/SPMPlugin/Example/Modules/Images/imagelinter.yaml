@@ -21,8 +21,10 @@ usingTypes:
     pattern: "(.*)".name
 checkingNameTypes:
   - case: camelCase
+    filter: vector, >1kb
   - case: firstUpperCase
-    message: First case should be uppered
+    message: First case should be uppered for vector images with 50px and more
+    filter: vector, > 0.05Kpx
 ignoredUnusedImages:
   - temp
 ignoredUndefinedImages:

@@ -53,34 +53,34 @@ for usingType in settings.usingTypes {
 struct CheckingNameRegexPattern {
     let pattern: NSRegularExpression
     let message: String
+    let filter: ImageFilter?
 }
 var checkingNameTypesRegex: [CheckingNameRegexPattern] = []
 
-private func addCheckingNameRegexPattern(pattern: String, message: String) {
-    print("addCheckingNameRegexPattern: \(pattern)")
+private func addCheckingNameRegexPattern(pattern: String, message: String, filter: ImageFilter?) {
     guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
         printError(filePath: #file, message: "Not right pattern for regex: \(pattern)", line: #line)
         return
     }
-    checkingNameTypesRegex.append(CheckingNameRegexPattern(pattern: regex, message: message))
+    checkingNameTypesRegex.append(CheckingNameRegexPattern(pattern: regex, message: message, filter: filter))
 }
-
-print("checkingNameTypes: \(settings.checkingNameTypes)")
 
 for checkingNameType in settings.checkingNameTypes {
     switch checkingNameType {
-    case .firstUpperCase(let message):
-        addCheckingNameRegexPattern(pattern: #"^[A-Z].*$"#, message: message)
-    case .camelCase(let message):
-        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-zA-Z0-9\/]*$"#, message: message)
-    case .sneak_case(let message):
-        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9_\/]*$"#, message: message)
-    case .kebab_case(let message):
-        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9\-\/]*$"#, message: message)
-    case .custom(let pattern, let message):
-        addCheckingNameRegexPattern(pattern: pattern, message: message)
+    case .firstUpperCase(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[A-Z].*$"#, message: message, filter: filter)
+    case .camelCase(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-zA-Z0-9\/]*$"#, message: message, filter: filter)
+    case .sneak_case(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9_\/]*$"#, message: message, filter: filter)
+    case .kebab_case(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9\-\/]*$"#, message: message, filter: filter)
+    case .custom(let pattern, let message, let filter):
+        addCheckingNameRegexPattern(pattern: pattern, message: message, filter: filter)
     }
 }
+
+print("checkingNameTypesRegex: \(checkingNameTypesRegex)")
 
 let allImageScales = (1...3)
 var targetScales: Set<Int> = []
@@ -203,6 +203,8 @@ for relativeImagesPath in settings.relativeImagesPaths {
             if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
 
                 let fileSize = fileSize(fromPath: imageFilePath)
+
+                imageInfo.fileSizes.append(fileSize)
 
                 if settings.vectorExtensions.contains(fileExtension) {
                     if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
@@ -355,13 +357,21 @@ for imageInfo in images {
 }
 
 for imageName in Set(foundedImages.keys).subtracting(settings.ignoredUnusedImages) {
+    guard let imageInfo = foundedImages[imageName] else {
+        continue
+    }
     var message = ""
     for checkingNameTypeRegex in checkingNameTypesRegex {
+        if let filter = checkingNameTypeRegex.filter {
+            if !filter.include(image: imageInfo) {
+                continue
+            }
+        }
         if checkingNameTypeRegex.pattern.firstMatch(in: imageName, options: [], range: NSRange(location: 0, length: imageName.count)) == nil {
             message += checkingNameTypeRegex.message + ". "
         }
     }
-    if message != "", let imageInfo = foundedImages[imageName] {
+    if message != "" {
         imageInfo.error(with: "Incorrect image name '\(imageInfo.name)': \(message)")
     }
 }

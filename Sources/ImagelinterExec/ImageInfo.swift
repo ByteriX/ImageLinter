@@ -52,7 +52,7 @@ class ImageInfo {
         }
     }
 
-    enum ImageType {
+    enum ImageType: String {
         case undefined
         case vector
         case rastor
@@ -67,6 +67,9 @@ class ImageInfo {
     var hash: String = ""
 
     var type: ImageType = .undefined
+
+    var fileSizes: [UInt64] = []
+    var imageSizes: [(width: Int, height: Int)] = []
 
     private func setAndCheckType(newType: ImageType, filePath: String){
         if type != .undefined, newType != type {
@@ -243,6 +246,7 @@ class ImageInfo {
                                 isWarning: true
                             )
                         }
+                        imageSizes.append((width: Int(size.width), height: Int(size.height)))
                         if size.width > settings.maxVectorImageSize.width || size.height > settings.maxVectorImageSize.height {
                             printError(
                                 filePath: imageFilePath,
@@ -273,6 +277,7 @@ class ImageInfo {
                             } else {
                                 scaledSize = newScaledSize
                             }
+                            imageSizes.append(newScaledSize)
                             if CGFloat(newScaledSize.width) > settings.maxRastorImageSize.width || CGFloat(newScaledSize.height) > settings.maxRastorImageSize.height{
                                 printError(
                                     filePath: imageFilePath,
