@@ -204,6 +204,7 @@ for relativeImagesPath in settings.relativeImagesPaths {
 
                 let fileSize = fileSize(fromPath: imageFilePath)
 
+                // TODO:  # bad idea fileSizes needs incapsulate to ImageInfo
                 imageInfo.fileSizes.append(fileSize)
 
                 if settings.vectorExtensions.contains(fileExtension) {

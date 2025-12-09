@@ -69,7 +69,7 @@ class ImageInfo {
     var type: ImageType = .undefined
 
     var fileSizes: [UInt64] = []
-    var imageSizes: [(width: Int, height: Int)] = []
+    private(set) var imageSizes: [(width: Int, height: Int)] = []
 
     private func setAndCheckType(newType: ImageType, filePath: String){
         if type != .undefined, newType != type {
