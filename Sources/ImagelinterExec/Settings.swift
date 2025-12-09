@@ -39,11 +39,11 @@ struct Settings {
 
     /// Patterns of checking of the image name
     enum CheckingNameType {
-        case firstUpperCase(message: String = "Name should start with uppercase")
-        case camelCase(message: String = "Camel case support only")
-        case sneak_case (message: String = "Sneak case support only")
-        case kebab_case (message: String = "Kebab case support only")
-        case custom (pattern: String, message: String = "Custom name checking")
+        case firstUpperCase(message: String = "Name should start with uppercase", filter: ImageFilter?)
+        case camelCase(message: String = "Camel case support only", filter: ImageFilter?)
+        case sneak_case (message: String = "Sneak case support only", filter: ImageFilter?)
+        case kebab_case (message: String = "Kebab case support only", filter: ImageFilter?)
+        case custom (pattern: String, message: String = "Custom name checking", filter: ImageFilter?)
     }
 
     /// you can check image name with a set of patterns
@@ -163,22 +163,22 @@ extension Settings {
             case kebab_case
             case custom
 
-            func convert(message: String?) -> Settings.CheckingNameType {
+            func convert(message: String?, filter: ImageFilter?) -> Settings.CheckingNameType {
                 if let message {
                     switch self {
-                        case .firstUpperCase: return .firstUpperCase(message: message)
-                        case .camelCase: return .camelCase(message: message)
-                        case .sneak_case: return .sneak_case(message: message)
-                        case .kebab_case: return .kebab_case(message: message)
-                        case .custom: return .custom(pattern: "", message: message)
+                    case .firstUpperCase: return .firstUpperCase(message: message, filter: filter)
+                        case .camelCase: return .camelCase(message: message, filter: filter)
+                        case .sneak_case: return .sneak_case(message: message, filter: filter)
+                        case .kebab_case: return .kebab_case(message: message, filter: filter)
+                        case .custom: return .custom(pattern: "", message: message, filter: filter)
                     }
                 } else {
                     switch self {
-                        case .firstUpperCase: return .firstUpperCase()
-                        case .camelCase: return .camelCase()
-                        case .sneak_case: return .sneak_case()
-                        case .kebab_case: return .kebab_case()
-                        case .custom: return .custom(pattern: "")
+                        case .firstUpperCase: return .firstUpperCase(filter: filter)
+                        case .camelCase: return .camelCase(filter: filter)
+                        case .sneak_case: return .sneak_case(filter: filter)
+                        case .kebab_case: return .kebab_case(filter: filter)
+                        case .custom: return .custom(pattern: "", filter: filter)
                     }
                 }
             }
@@ -349,6 +349,7 @@ extension Settings {
                     self.usingTypes = []
                 }
             case .checkingNameTypes:
+                // TODO: # needs refactory with delete CheckingNameRegexPattern
                 if let value = currentValue, value.isEmpty == false {
                     if let object = Self.getObject(line: value), object.name == "case" {
                         if let checkingNameType = Key.CheckingNameType(rawValue: object.value) {
@@ -357,17 +358,23 @@ extension Settings {
                                 guard lineIndex < lines.count else {
                                     break
                                 }
-                                let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
                                 var customMessage: String?
+                                var customFilter: ImageFilter?
 
-                                if line.hasPrefix("#") == false,
+                                while line.hasPrefix("#") == false,
                                    let object = Self.getObject(line: line),
-                                   object.name == "message"
+                                   object.name == "message" || object.name == "filter"
                                 {
                                     lineIndex += 1
-                                    customMessage = object.value
+                                    if object.name == "message" {
+                                        customMessage = object.value
+                                    } else if object.name == "filter" {
+                                        customFilter = ImageFilter(object.value)
+                                    }
+                                    line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
                                 }
-                                self.checkingNameTypes.append(checkingNameType.convert(message: customMessage))
+                                self.checkingNameTypes.append(checkingNameType.convert(message: customMessage, filter: customFilter))
                             case .custom:
                                 guard lineIndex < lines.count else {
                                     break
@@ -375,25 +382,28 @@ extension Settings {
                                 var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
                                 var customPattern: String?
                                 var customMessage: String?
+                                var customFilter: ImageFilter?
 
                                 // TODO: # needs just continue
                                 while line.hasPrefix("#") == false,
                                    let object = Self.getObject(line: line),
-                                   object.name == "pattern" || object.name == "message"
+                                   object.name == "pattern" || object.name == "message" || object.name == "filter"
                                 {
                                     lineIndex += 1
                                     if object.name == "pattern" {
                                         customPattern = object.value
                                     } else if object.name == "message" {
                                         customMessage = object.value
+                                    } else if object.name == "filter" {
+                                        customFilter = ImageFilter(object.value)
                                     }
                                     line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
                                 }
                                 if let customPattern {
                                     if let customMessage, customMessage.isEmpty == false {
-                                        self.checkingNameTypes.append(.custom(pattern: customPattern, message: customMessage))
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern, message: customMessage, filter: customFilter))
                                     } else {
-                                        self.checkingNameTypes.append(.custom(pattern: customPattern))
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern, filter: customFilter))
                                     }
                                 }
                             }
