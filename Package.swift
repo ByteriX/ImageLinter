@@ -23,10 +23,18 @@ let package = Package(
             name: "Imagelinter",
             dependencies: []
         ),
+        .testTarget(
+            name: "ImagelinterExecTests",
+            dependencies: [ "ImagelinterExec" ]
+        ),
         .executableTarget(
             name: "ImagelinterExec",
-            dependencies: [ ]
+            dependencies: []
         ),
-        .plugin(name: "ImagelinterPlugin", capability: .buildTool(), dependencies: ["ImagelinterExec"])
+        .plugin(
+            name: "ImagelinterPlugin",
+            capability: .buildTool(),
+            dependencies: ["ImagelinterExec"]
+        ),
     ]
 )

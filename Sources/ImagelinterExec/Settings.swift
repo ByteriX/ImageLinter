@@ -155,3 +155,18 @@ extension Settings {
         load(from: stringData)
     }
 }
+
+extension Settings.UsingType: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.custom(pattern: let lhsPattern, isSwiftGen: let lhsIsSwiftGen), .custom(pattern: let rhsPattern, isSwiftGen: let rhsIsSwiftGen)):
+            return (lhsPattern == rhsPattern) && (lhsIsSwiftGen == rhsIsSwiftGen)
+        case (.swiftGen(enumName: let lhsEnumName), .swiftGen(enumName: let rhsEnumName)):
+            return lhsEnumName == rhsEnumName
+        case (.uiKitLiteral, .uiKitLiteral), (.uiKit, .uiKit), (.swiftUI, .swiftUI):
+            return true
+        default :
+            return false
+        }
+    }
+}

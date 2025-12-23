@@ -6,9 +6,8 @@
 //
 
 import Foundation
-import AppKit
 
-struct ImageFilter {
+public struct ImageFilter {
 
     protocol Condition {
         func include(image: ImageInfo) -> Bool
