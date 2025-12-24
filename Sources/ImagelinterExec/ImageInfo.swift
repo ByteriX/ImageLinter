@@ -39,7 +39,7 @@ let imagesetExtension = ".imageset"
 let appIconExtension = ".appiconset"
 let assetExtension = ".xcassets"
 
-class ImageInfo {
+public class ImageInfo {
     struct File {
         // needs concatinate with ImageInfo.dir
         let path: String
@@ -52,7 +52,7 @@ class ImageInfo {
         }
     }
 
-    enum ImageType: String {
+    public enum ImageType: String {
         case undefined
         case vector
         case rastor

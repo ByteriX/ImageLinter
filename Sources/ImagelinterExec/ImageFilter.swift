@@ -9,13 +9,13 @@ import Foundation
 
 public struct ImageFilter {
 
-    protocol Condition {
+    public protocol Condition {
         func include(image: ImageInfo) -> Bool
     }
 
-    var andConditions: [Condition] = []
+    public private(set) var andConditions: [Condition] = []
 
-    init? (_ string: String) {
+    public init? (_ string: String) {
         guard string.isEmpty == false else {
             return nil
         }
@@ -29,7 +29,7 @@ public struct ImageFilter {
         }
     }
 
-    func include(image: ImageInfo) -> Bool {
+    public func include(image: ImageInfo) -> Bool {
         var result = true
         andConditions.forEach { condition in
             result = result && condition.include(image: image)
@@ -39,8 +39,8 @@ public struct ImageFilter {
 }
 
 extension ImageFilter {
-    struct OrCondition: Condition {
-        var orConditions: [Condition] = []
+    public struct OrCondition: Condition {
+        public private(set) var orConditions: [Condition] = []
 
         init? (_ string: String) {
             guard string.isEmpty == false else {
@@ -57,7 +57,7 @@ extension ImageFilter {
             }
         }
 
-        func include(image: ImageInfo) -> Bool {
+        public func include(image: ImageInfo) -> Bool {
             var result: Bool = false
             orConditions.forEach { condition in
                 result = result || condition.include(image: image)
@@ -68,11 +68,11 @@ extension ImageFilter {
 }
 
 extension ImageFilter {
-    struct ImageTypeCondition: Condition {
+    public struct ImageTypeCondition: Condition {
 
         private static let pattern = try! NSRegularExpression(pattern: #"[\s\/\|\/]*(undefined|rastor|vector|mixed)[\s\/\|\/]*"#, options: [])
 
-        private var types: Set<ImageInfo.ImageType>
+        public private(set) var types: Set<ImageInfo.ImageType>
 
         init? (_ string: String) {
             guard string.isEmpty == false else {
@@ -97,14 +97,14 @@ extension ImageFilter {
             self.types = types
         }
 
-        func include(image: ImageInfo) -> Bool {
+        public func include(image: ImageInfo) -> Bool {
             types.contains(image.type)
         }
     }
 }
 
 extension ImageFilter {
-    enum Messure {
+    public enum Messure {
         case bytes
         case pixels
 
@@ -119,7 +119,7 @@ extension ImageFilter {
         }
     }
 
-    enum Comparison {
+    public enum Comparison {
         case equal
         case greater
         case less
@@ -137,10 +137,10 @@ extension ImageFilter {
         }
     }
 
-    struct Size {
-        let value: Int64
-        let messure: Messure
-        let comparison: Comparison
+    public struct Size {
+        public let value: Int64
+        public let messure: Messure
+        public let comparison: Comparison
 
         init?(strings: [String]) {
             guard strings.count == 4 else {
@@ -174,7 +174,7 @@ extension ImageFilter {
             self.comparison = comparison
         }
 
-        func include(image: ImageInfo) -> Bool {
+        public func include(image: ImageInfo) -> Bool {
             var value: UInt64 = 0
 
             switch messure {
@@ -215,10 +215,10 @@ extension ImageFilter {
         }
     }
 
-    struct SizeCondition: Condition {
+    public struct SizeCondition: Condition {
         private static let pattern = try! NSRegularExpression(pattern: #"[\s\/\|\/]*(>|=>|>=|<|=<|<=|=|==)\s*([0-9.]*)\s*(M|m|K|k|)(PX|px|Px|b|B)[\s\/\|\/]*"#, options: [])
 
-        private var size: [Size] = []
+        public private(set) var size: [Size] = []
 
         init? (_ string: String) {
             guard string.isEmpty == false else {
@@ -243,7 +243,7 @@ extension ImageFilter {
             }
         }
 
-        func include(image: ImageInfo) -> Bool {
+        public func include(image: ImageInfo) -> Bool {
             var result: Bool = false
 
             for item in size {
