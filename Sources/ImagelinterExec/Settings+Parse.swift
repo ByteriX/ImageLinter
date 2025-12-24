@@ -135,29 +135,24 @@ extension Settings {
                         if let checkingNameType = Key.CheckingNameType(rawValue: object.value) {
                             switch checkingNameType {
                             case .firstUpperCase, .camelCase, .sneak_case, .kebab_case:
-                                guard lineIndex < lines.count else {
-                                    break
-                                }
-                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
                                 var customMessage: String?
                                 var customFilter: ImageFilter?
-
-                                // TODO: # needs just continue
-                                while
-                                    lineIndex < lines.count,
-                                    line.hasPrefix("#") == false,
-                                    let object = Self.getObject(line: line),
-                                    object.name == "message" || object.name == "filter"
-                                {
-                                    lineIndex += 1
+                                while lineIndex < lines.count {
+                                    let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                    if line.hasPrefix("#") {
+                                        lineIndex += 1
+                                        continue
+                                    }
+                                    guard let object = Self.getObject(line: line),
+                                          object.name == "message" || object.name == "filter" else {
+                                        break
+                                    }
                                     if object.name == "message" {
                                         customMessage = object.value
                                     } else if object.name == "filter" {
                                         customFilter = ImageFilter(object.value)
                                     }
-                                    if lineIndex < lines.count {
-                                        line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                                    }
+                                    lineIndex += 1
                                 }
                                 self.checkingNameTypes.append(checkingNameType.convert(message: customMessage, filter: customFilter))
                             case .custom:
