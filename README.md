@@ -13,6 +13,7 @@ Check image files and resources for Swift
  7. Checking duplicate images by content (but identical)
  8. Search empty and broken asset images
  9. Analysis scales of images with dependency on platforms target
+ 10. Checking the name of images with convensions or custom patterns apply filters
 
 ![](Screens/1.png)
 
@@ -22,8 +23,8 @@ Check image files and resources for Swift
 2. Support Assets and files with @Xx notation
 3. vector/rastor diffenition and you can limit use formats by PNG, JPG, PDF, SVG, etc formats
 4. Support any use notation: SwiftUI, UIKit, SwiftGen, and custom Regex
-5. You can ignore any images
-6. Any settings for generation errors or warnings
+5. You can ignore any images or sources use
+6. Any settings for generation errors or warnings with different filters
 
 ## Install
 
@@ -64,8 +65,16 @@ ${SRCROOT}/ImageLinter.swift
 You need to add a settings file named `imagelinter.yaml` or/and `imagelinter.yml` to a `target` or/and `the root of the library` `dir` of the package.
 imagesPath and sourcePath are calculated from dir of this package. 
 
-Supports more settings files with rewrite properties with priority: first a `target` then `the root of library `dir`, first `imagelinter.yaml` then `imagelinter.yml`.
+Supports more settings files with rewrite properties with priority: first a `target` then `the root` of library dir, first `imagelinter.yaml` then `imagelinter.yml`.
 If you want to have a custom path to settings file, you can use `--settingsPath [path to your imagelinter.yaml or imagelinter.yml file]` command line param from script call only on build phase. In the plugin this would be set to target dirrectory all time.
+
+### How to setting up your yaml file
+
+#### `isEnabled` turn on/off working of this plugin/script. Is boolean param with `true` \ `false` value. Default is `true`.
+```yaml
+isEnabled: true
+```
+
 
 ### Example of Settings file format
 
