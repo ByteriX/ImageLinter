@@ -49,14 +49,7 @@ public struct Settings {
     /// you can check image name with a set of patterns
     public internal(set) var checkingNameTypes: [CheckingNameType] = []
 
-    /**
-     If you want to exclude unused image from checking, you can define they this
-
-     Example:
-      let ignoredUnusedImages = [
-         "ApplicationPoster"
-      ]
-     */
+    /// If you want to exclude unused image from checking, you can define they this
     public internal(set) var ignoredUnusedImages: Set<String> = [ ]
     public internal(set) var ignoredUndefinedImages: Set<String> = [ ]
 
@@ -69,16 +62,19 @@ public struct Settings {
     // If you wan't show double errors/warnings for all files of an image change this to false
     public internal(set) var isAllFilesErrorShowing = false
 
-    // Maximum size of Vector files
+    // Maximum size of Vector files in bytes.
     public internal(set) var maxVectorFileSize: UInt64 = 20_000
+    // Maximum size of Vector images in pixels.
     public internal(set) var maxVectorImageSize: CGSize = CGSize(width: 100, height: 100)
 
-    // Maximum size of Rastor files
+    // Maximum size of Rastor files in bytes.
     public internal(set) var maxRastorFileSize: UInt64 = 200_000
+    // Maximum size of Rastor images in pixels.
     public internal(set) var maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
 
     public internal(set) var isCheckingFileSize = true
     public internal(set) var isCheckingImageSize = true
+
     public internal(set) var isCheckingPdfVector = true
     public internal(set) var isCheckingSvgVector = true
     public internal(set) var isCheckingScaleSize = true
