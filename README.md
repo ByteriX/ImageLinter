@@ -166,7 +166,7 @@ let uiKitPicture = "picture".uiImage
 **checkingNameTypes** - array of ways to checking a image name used from the project. You can use pre-installed case or/and make your regular expressions to match with your a way to checking a image name. Every way works separated.
 ##### every case has standart options:
 **message** - addition parameter text to show developer if checking fail. Has default value for every cases.
-**filter** - addition optional parameter text with filter query for selection images to checking. Default all images. If you want use custom filter query see `Filter Settings` section.
+**filter** - addition optional parameter text with filter query for selection images to checking. Default all images. If you want use custom filter query see [Filter Settings](Filter Settings) section.
 ##### cases:
 **firstUpperCase** - Name should start with uppercase.
 **camelCase** - Camel case support only.
@@ -312,6 +312,42 @@ targetPlatforms:
   - iOS
   - iPadOS
   - macOS
+```
+
+### Filter Settings
+
+In yaml settings may used `filter` string value for execute query of images with conditions, described according to the following diagram:
+
+[image type], [condition] [value of size] [multiplier for value] [messure of size], etc
+
+You can use a comma or a vertical bar to make a logical and/or in statement for any number of expressions:
+
+[query1],[query2]|[query3]|[query4], [query5] | [query6]
+
+#### Table of expressions:
+| Expression    | Description                     | Variants          | example of using   |
+| :------------ | :-----------------------------: | :---------------: | :----------------: |
+|  ,    | Logical and with spaces or not     | `,` ` ,  ` | vector , >= 3Mpx|
+|  |    | Logical or with spaces or not. It has a lower priority than logical and    | `|` ` |  ` | vector , >= 3Mpx|
+| image type    | Type of content from image      | undefined, rastor, vector, mixed | vector |
+| condition:    | condition for comparing the current value of the size with the value following it.      | >, =>, >=, <, =<, <=, =, == | >= 2Kpx |
+| =    | current value equal to given value. | =, == | == 2Kpx |
+| >    | current value more or equal to given value. | >, >=, => | => 2000b |
+| <    | current value less or equal to given value. | <, <=, =< | <= 10Mb |
+| value of size | Integer given value of condition for comparing. | 0, 400, 99999, and more | <100 Kpx |
+| multiplier for value: | multiplier for given value for short designation. | k, K, m, M | >3 Mpx |
+| k    | x 1000 for pixels. x 1024 for bytes. | k, K | = 3 kB |
+| m    | x 1000 0000 for pixels. x 1024 x 1024 for bytes. | m, M | = 5 Mpx |
+| messure of size: | Measurement for comparision of values. | PX, px, Px, B, b | >6 MB |
+| px    | Measurement in pixels for a width x height image size. | PX, px, Px | > 4 kPX |
+| B    | Measurement in bytes for a file size. | B, b | > 4 kB |
+
+#### Example of filter settings:
+```yaml
+usingTypes:
+  - case: camelCase
+    # for vecor images with size 10 Mega bytes and less or rastor images with size width x height = 25000 and more
+    filter: vector, <=10Mb | rastor, > 25kPx
 ```
 
 ### Example of Settings file format
