@@ -202,7 +202,7 @@ ignoredUndefinedImages:
   - exampleIcon
 ```
 
-**rastorExtensions** - array of extensions of images files who contains raster type of pictures. This files will processining linter as resource. Default contains png, jpg, jpeg.
+**rastorExtensions** - array of extensions of images files who contains raster type of pictures. This files will processining linter as resource. Default contains png, jpg, jpeg. You can use any values, for example:
 ```yaml
 rastorExtensions:
   - jpeg
@@ -213,7 +213,7 @@ rastorExtensions:
   - heic
   - WebP
 ```
-**vectorExtensions** - array of extensions of images files who contains vector type of pictures. This files will processining linter as resource. Default contains pdf, svg.
+**vectorExtensions** - array of extensions of images files who contains vector type of pictures. This files will processining linter as resource. Default contains pdf, svg. You can use any values, for example:
 ```yaml
 vectorExtensions:
   - svg 
@@ -223,7 +223,7 @@ vectorExtensions:
   - cdr
 ```
 
-**sourcesExtensions** - array of extensions of source code files who contains using of pictures. This files will processining linter as sources. Default contains swift, mm, m.
+**sourcesExtensions** - array of extensions of source code files who contains using of pictures. This files will processining linter as sources. Default contains swift, mm, m. You can use any values, for example:
 ```yaml
 sourcesExtensions:
   - swift
@@ -233,7 +233,7 @@ sourcesExtensions:
   - cpp
 ```
 
-**resourcesExtensions** - array of extensions of resources files who contains screen layout. This files should contains using of pictures and will processining linter as sources. Default contains storyboard, xib.
+**resourcesExtensions** - array of extensions of resources files who contains screen layout. This files should contains using of pictures and will processining linter as sources. Default contains storyboard, xib. You can use any values, for example:
 ```yaml
 sourcesExtensions:
   - storyboard
@@ -260,7 +260,7 @@ maxVectorImageSize:
 
 **maxRastorFileSize** - integer parameter: maximum file size in bytes of a using images with rastor type. Default is 200 KByte.
 ```yaml
-maxRastorFileSize: 1024_000 # it is 1 Mb.
+maxRastorFileSize: 1_048_576 # it is 1 Mb.
 ```
 
 **maxRastorImageSize** - maximum picture sizes for images with rastor type. It contains **width** and **height** properties of picture size in pixels of images files. Default is 1000x1000px.
@@ -291,7 +291,7 @@ isCheckingPdfVector: true
 isCheckingSvgVector: true
 ```
 
-**isCheckingScaleSize** - bool parameter: The true value execute checking a image set to complaince all size in a set. For example the image set with name `yourImageSet` has images: yourImageSet.png (100x100 px), yourImageSet@2x.png (200x200 px), yourImageSet@3x.png (300x300 px). Sizes of `yourImageSet` check successfull. But if an one image has other size (for example yourImageSet@2x.png (201x202 px)) this test will fail. Default is true.
+**isCheckingScaleSize** - bool parameter: The true value execute checking a image set to complaince all size in a set. For example the image set with name `yourImageSet` has images: `yourImageSet.png` (100x100 px), `yourImageSet@2x.png` (200x200 px), `yourImageSet@3x.png` (300x300 px). Sizes of `yourImageSet` check successfull. But if an one image has other size (for example `yourImageSet@2x.png` (201x202 px)) this test will fail. Default is true.
 ```yaml
 isCheckingScaleSize: true
 ```
@@ -318,17 +318,25 @@ targetPlatforms:
 
 In yaml settings may used `filter` string value for execute query of images with conditions, described according to the following diagram:
 
+```
+
 [image type], [condition] [value of size] [multiplier for value] [messure of size], etc
+
+```
 
 You can use a comma or a vertical bar to make a logical and/or in statement for any number of expressions:
 
+```
+
 [query1],[query2]|[query3]|[query4], [query5] | [query6]
 
+```
+
 #### Table of expressions:
-| Expression    | Description                     | Variants          | example of using   |
-| :------------ | :-----------------------------: | :---------------: | :----------------: |
+| Expression  | Description                         | Variants        | Example of using |
+| :---------- | :---------------------------------: | :-------------: | :--------------: |
 |  ,    | Logical and with spaces or not     | `,` ` ,  ` | vector , >= 3Mpx|
-|  |    | Logical or with spaces or not. It has a lower priority than logical and    | `|` ` |  ` | vector , >= 3Mpx|
+|  \|    | Logical or with spaces or not. It has a lower priority than logical and    | `\|` ` \|  ` | vector , >= 3Mpx|
 | image type    | Type of content from image      | undefined, rastor, vector, mixed | vector |
 | condition:    | condition for comparing the current value of the size with the value following it.      | >, =>, >=, <, =<, <=, =, == | >= 2Kpx |
 | =    | current value equal to given value. | =, == | == 2Kpx |
