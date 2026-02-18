@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 2.2.1
+ version 2.3.0
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2025 ByteriX. All rights reserved.
@@ -80,6 +80,435 @@ extension String {
     }
 }
 //
+//  Settings+Keys.swift
+//  Imagelinter
+//
+//  Created by Sergey Balalaev on 23.12.2025.
+//
+
+extension Settings {
+    enum Key: String {
+        case isEnabled
+        case relativeImagesPaths
+        case relativeImagesPath
+        case relativeSourcePaths
+        case relativeSourcePath
+
+        case usingTypes
+        case checkingNameTypes
+
+        case ignoredUnusedImages
+        case ignoredUndefinedImages
+
+        case rastorExtensions
+        case vectorExtensions
+
+        case sourcesExtensions
+        case resourcesExtensions
+
+        case isAllFilesErrorShowing
+
+        case maxVectorFileSize
+        case maxVectorImageSize
+
+        case maxRastorFileSize
+        case maxRastorImageSize
+
+
+        case isCheckingFileSize
+        case isCheckingImageSize
+        case isCheckingPdfVector
+        case isCheckingSvgVector
+        case isCheckingScaleSize
+        case isCheckingDuplicatedByName
+        case isCheckingDuplicatedByContent
+
+        case targetPlatforms
+
+        enum UsingType: String {
+            case swiftUI
+            case uiKit
+            case uiKitLiteral
+            case swiftGen
+            case custom
+        }
+
+        enum CheckingNameType: String {
+            case firstUpperCase
+            case camelCase
+            case sneak_case
+            case kebab_case
+            case custom
+
+            func convert(message: String?, filter: ImageFilter?) -> Settings.CheckingNameType {
+                if let message {
+                    switch self {
+                    case .firstUpperCase: return .firstUpperCase(message: message, filter: filter)
+                        case .camelCase: return .camelCase(message: message, filter: filter)
+                        case .sneak_case: return .sneak_case(message: message, filter: filter)
+                        case .kebab_case: return .kebab_case(message: message, filter: filter)
+                        case .custom: return .custom(pattern: "", message: message, filter: filter)
+                    }
+                } else {
+                    switch self {
+                        case .firstUpperCase: return .firstUpperCase(filter: filter)
+                        case .camelCase: return .camelCase(filter: filter)
+                        case .sneak_case: return .sneak_case(filter: filter)
+                        case .kebab_case: return .kebab_case(filter: filter)
+                        case .custom: return .custom(pattern: "", filter: filter)
+                    }
+                }
+            }
+        }
+
+        enum TargetPlatform: String {
+            case iOS
+            case iPadOS
+            case macOS
+            case tvOS
+            case visionOS
+            case watchOS
+        }
+    }
+}
+//
+//  Settings+Parse.swift
+//  Imagelinter
+//
+//  Created by Sergey Balalaev on 23.12.2025.
+//
+import Foundation
+
+extension Settings {
+
+    mutating func load(from stringData: String) {
+        let lines = stringData.components(separatedBy: .newlines)
+
+        var currentKey: Key? = nil
+        var isStartKey: Bool = false
+        var lineIndex = 0
+
+        while lineIndex < lines.count {
+            let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+            lineIndex += 1
+
+            if line.hasPrefix("#") {
+                continue
+            }
+
+            var currentValue: String? = nil
+            if let value = Self.getArrayValue(line: line) {
+                currentValue = value
+            } else if let object = Self.getObject(line: line) {
+                if let key = Key(rawValue: object.name) {
+                    currentKey = key
+                    currentValue = object.value
+                    isStartKey = true
+                }
+            }
+
+            func getSize(defaultSize: CGSize) -> CGSize {
+                var width = defaultSize.width
+                var height = defaultSize.height
+
+                while lineIndex < lines.count
+                {
+                    let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                    if line.hasPrefix("#") == false,
+                       let object = Self.getObject(line: line)
+                    {
+                        if object.name == "width" {
+                            width = Double(object.value) ?? defaultSize.width
+                        } else if object.name == "height" {
+                            height = Double(object.value) ?? defaultSize.height
+                        } else {
+                            break
+                        }
+                    }
+                    lineIndex += 1
+                }
+
+                return CGSize(width: width, height: height)
+            }
+
+            guard let currentKey else { continue }
+            switch currentKey {
+            case .isEnabled:
+                if let value = currentValue, let isEnabled = Bool(value) {
+                    self.isEnabled = isEnabled
+                }
+            case .relativeImagesPath, .relativeImagesPaths:
+                if let value = currentValue, value != "" {
+                    relativeImagesPaths.append(Self.pathWithSlash(value))
+                }
+            case .relativeSourcePath, .relativeSourcePaths:
+                if let value = currentValue, value != "" {
+                    relativeSourcePaths.append(Self.pathWithSlash(value))
+                }
+            case .usingTypes:
+                if let value = currentValue, value.isEmpty == false {
+                    if let object = Self.getObject(line: value), object.name == "case" {
+                        if let usingType = Key.UsingType(rawValue: object.value) {
+                            switch usingType {
+                            case .swiftUI:
+                                self.usingTypes.append(.swiftUI)
+                            case .uiKit:
+                                self.usingTypes.append(.uiKit)
+                            case .uiKitLiteral:
+                                self.usingTypes.append(.uiKitLiteral)
+                            case .swiftGen:
+                                guard lineIndex < lines.count else {
+                                    break
+                                }
+                                let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                if line.hasPrefix("#") == false,
+                                   let object = Self.getObject(line: line),
+                                   object.name == "enumName"
+                                {
+                                    lineIndex += 1
+                                    self.usingTypes.append(.swiftGen(enumName: object.value))
+                                }
+                            case .custom:
+                                guard lineIndex < lines.count else {
+                                    break
+                                }
+                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var customPattern: String?
+                                var customIsSwiftGen = false
+
+                                // TODO: # needs just continue
+                                while lineIndex < lines.count,
+                                      line.hasPrefix("#") == false,
+                                      let object = Self.getObject(line: line),
+                                      object.name == "pattern" || object.name == "isSwiftGen"
+                                {
+                                    lineIndex += 1
+                                    if object.name == "pattern" {
+                                        customPattern = object.value
+                                    } else if object.name == "isSwiftGen", let isSwiftGen = Bool(object.value) {
+                                        customIsSwiftGen = isSwiftGen
+                                    }
+                                    if lineIndex < lines.count {
+                                        line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                    }
+                                }
+                                if let customPattern {
+                                    self.usingTypes.append(.custom(pattern: customPattern, isSwiftGen: customIsSwiftGen))
+                                }
+                            }
+                        }
+                    }
+                } else if isStartKey {
+                    self.usingTypes = []
+                }
+            case .checkingNameTypes:
+                // TODO: # needs refactory with delete CheckingNameRegexPattern
+                if let value = currentValue, value.isEmpty == false {
+                    if let object = Self.getObject(line: value), object.name == "case" {
+                        if let checkingNameType = Key.CheckingNameType(rawValue: object.value) {
+                            switch checkingNameType {
+                            case .firstUpperCase, .camelCase, .sneak_case, .kebab_case:
+                                var customMessage: String?
+                                var customFilter: ImageFilter?
+                                while lineIndex < lines.count {
+                                    let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                    if line.hasPrefix("#") {
+                                        lineIndex += 1
+                                        continue
+                                    }
+                                    guard let object = Self.getObject(line: line),
+                                          object.name == "message" || object.name == "filter" else {
+                                        break
+                                    }
+                                    if object.name == "message" {
+                                        customMessage = object.value
+                                    } else if object.name == "filter" {
+                                        customFilter = ImageFilter(object.value)
+                                    }
+                                    lineIndex += 1
+                                }
+                                self.checkingNameTypes.append(checkingNameType.convert(message: customMessage, filter: customFilter))
+                            case .custom:
+                                guard lineIndex < lines.count else {
+                                    break
+                                }
+                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                var customPattern: String?
+                                var customMessage: String?
+                                var customFilter: ImageFilter?
+
+                                // TODO: # needs just continue
+                                while lineIndex < lines.count,
+                                      line.hasPrefix("#") == false,
+                                      let object = Self.getObject(line: line),
+                                      object.name == "pattern" || object.name == "message" || object.name == "filter"
+                                {
+                                    lineIndex += 1
+                                    if object.name == "pattern" {
+                                        customPattern = object.value
+                                    } else if object.name == "message" {
+                                        customMessage = object.value
+                                    } else if object.name == "filter" {
+                                        customFilter = ImageFilter(object.value)
+                                    }
+                                    if lineIndex < lines.count {
+                                        line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
+                                    }
+                                }
+                                if let customPattern {
+                                    if let customMessage, customMessage.isEmpty == false {
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern, message: customMessage, filter: customFilter))
+                                    } else {
+                                        self.checkingNameTypes.append(.custom(pattern: customPattern, filter: customFilter))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if isStartKey {
+                    self.checkingNameTypes = []
+                }
+            case .ignoredUnusedImages:
+                if let value = currentValue, value.isEmpty == false {
+                    self.ignoredUnusedImages.insert(value)
+                } else if isStartKey {
+                    self.ignoredUnusedImages = []
+                }
+            case .ignoredUndefinedImages:
+                if let value = currentValue, value.isEmpty == false {
+                    self.ignoredUndefinedImages.insert(value)
+                } else if isStartKey {
+                    self.ignoredUndefinedImages = []
+                }
+            case .rastorExtensions:
+                if let value = currentValue, value.isEmpty == false {
+                    self.rastorExtensions.insert(value.uppercased())
+                } else if isStartKey {
+                    self.rastorExtensions = []
+                }
+            case .vectorExtensions:
+                if let value = currentValue, value.isEmpty == false {
+                    self.vectorExtensions.insert(value.uppercased())
+                } else if isStartKey {
+                    self.vectorExtensions = []
+                }
+            case .sourcesExtensions:
+                if let value = currentValue, value.isEmpty == false {
+                    self.sourcesExtensions.insert(value.uppercased())
+                } else if isStartKey {
+                    self.sourcesExtensions = []
+                }
+            case .resourcesExtensions:
+                if let value = currentValue, value.isEmpty == false {
+                    self.resourcesExtensions.insert(value.uppercased())
+                } else if isStartKey {
+                    self.resourcesExtensions = []
+                }
+            case .isAllFilesErrorShowing:
+                if let value = currentValue, let isAllFilesErrorShowing = Bool(value) {
+                    self.isAllFilesErrorShowing = isAllFilesErrorShowing
+                }
+            case .maxVectorFileSize:
+                if let value = currentValue, let maxVectorFileSize = UInt64(value) {
+                    self.maxVectorFileSize = maxVectorFileSize
+                }
+            case .maxVectorImageSize:
+                self.maxVectorImageSize = getSize(defaultSize: self.maxVectorImageSize)
+
+            case .maxRastorFileSize:
+                if let value = currentValue, let maxRastorFileSize = UInt64(value) {
+                    self.maxRastorFileSize = maxRastorFileSize
+                }
+            case .maxRastorImageSize:
+                self.maxRastorImageSize = getSize(defaultSize: self.maxRastorImageSize)
+
+            case .isCheckingFileSize:
+                if let value = currentValue, let isCheckingFileSize = Bool(value) {
+                    self.isCheckingFileSize = isCheckingFileSize
+                }
+            case .isCheckingImageSize:
+                if let value = currentValue, let isCheckingImageSize = Bool(value) {
+                    self.isCheckingImageSize = isCheckingImageSize
+                }
+            case .isCheckingPdfVector:
+                if let value = currentValue, let isCheckingPdfVector = Bool(value) {
+                    self.isCheckingPdfVector = isCheckingPdfVector
+                }
+            case .isCheckingSvgVector:
+                if let value = currentValue, let isCheckingSvgVector = Bool(value) {
+                    self.isCheckingSvgVector = isCheckingSvgVector
+                }
+            case .isCheckingScaleSize:
+                if let value = currentValue, let isCheckingScaleSize = Bool(value) {
+                    self.isCheckingScaleSize = isCheckingScaleSize
+                }
+            case .isCheckingDuplicatedByName:
+                if let value = currentValue, let isCheckingDuplicatedByName = Bool(value) {
+                    self.isCheckingDuplicatedByName = isCheckingDuplicatedByName
+                }
+            case .isCheckingDuplicatedByContent:
+                if let value = currentValue, let isCheckingDuplicatedByContent = Bool(value) {
+                    self.isCheckingDuplicatedByContent = isCheckingDuplicatedByContent
+                }
+            case .targetPlatforms:
+                if let value = currentValue, value.isEmpty == false {
+                    if let targetPlatform = Key.TargetPlatform(rawValue: value) {
+                        switch targetPlatform {
+                        case .iOS:
+                            self.targetPlatforms.append(.iOS)
+                        case .iPadOS:
+                            self.targetPlatforms.append(.iPadOS)
+                        case .macOS:
+                            self.targetPlatforms.append(.macOS)
+                        case .tvOS:
+                            self.targetPlatforms.append(.tvOS)
+                        case .visionOS:
+                            self.targetPlatforms.append(.visionOS)
+                        case .watchOS:
+                            self.targetPlatforms.append(.watchOS)
+                        }
+                    }
+                } else if isStartKey {
+                    self.targetPlatforms = []
+                }
+            }
+            isStartKey = false
+        }
+    }
+
+    private struct Object {
+        let name: String
+        let value: String
+    }
+
+    private static let regexObject = try! NSRegularExpression(pattern: #"^([A-z0-9]+?)\s*:"#, options: [.caseInsensitive])
+
+    private static func getObject(line: String) -> Object? {
+        let results = regexObject.matches(in: line, range: NSRange(line.startIndex..., in: line))
+        if let result = results.first {
+            let name = String(line[Range(result.range, in: line)!]).dropLast().trimmingCharacters(in: .whitespaces)
+            let value = line.suffix(from: Range(result.range, in: line)!.upperBound).trimmingCharacters(in: .whitespaces)
+            return Object(name: name, value: value)
+        }
+        return nil
+    }
+
+    private static func getArrayValue(line: String) -> String? {
+        guard line.first == "-" else {
+            return nil
+        }
+        return line.dropFirst().trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func getArrayObject(line: String) -> Object? {
+        guard let value = getArrayValue(line: line) else {
+            return nil
+        }
+        return getObject(line: value)
+    }
+
+}
+//
 //  ImageInfo.swift
 //  
 //
@@ -120,7 +549,7 @@ let imagesetExtension = ".imageset"
 let appIconExtension = ".appiconset"
 let assetExtension = ".xcassets"
 
-class ImageInfo {
+public class ImageInfo {
     struct File {
         // needs concatinate with ImageInfo.dir
         let path: String
@@ -133,7 +562,7 @@ class ImageInfo {
         }
     }
 
-    enum ImageType {
+    public enum ImageType: String {
         case undefined
         case vector
         case rastor
@@ -148,6 +577,9 @@ class ImageInfo {
     var hash: String = ""
 
     var type: ImageType = .undefined
+
+    var fileSizes: [UInt64] = []
+    private(set) var imageSizes: [(width: Int, height: Int)] = []
 
     private func setAndCheckType(newType: ImageType, filePath: String){
         if type != .undefined, newType != type {
@@ -324,6 +756,7 @@ class ImageInfo {
                                 isWarning: true
                             )
                         }
+                        imageSizes.append((width: Int(size.width), height: Int(size.height)))
                         if size.width > settings.maxVectorImageSize.width || size.height > settings.maxVectorImageSize.height {
                             printError(
                                 filePath: imageFilePath,
@@ -354,6 +787,7 @@ class ImageInfo {
                             } else {
                                 scaledSize = newScaledSize
                             }
+                            imageSizes.append(newScaledSize)
                             if CGFloat(newScaledSize.width) > settings.maxRastorImageSize.width || CGFloat(newScaledSize.height) > settings.maxRastorImageSize.height{
                                 printError(
                                     filePath: imageFilePath,
@@ -487,21 +921,21 @@ class ImageInfo {
 
 import Foundation
 
-struct Settings {
-    
+public struct Settings {
+
     /// For enable or disable this script
-    var isEnabled = true
+    public internal(set) var isEnabled = true
 
     private(set) var dir: String = defaultDir
 
     /// Multipath  to folders with images you actually use in your project. For Example ["/YouProject/Resources/Images",  "/OtherProject"]
-    private(set) var relativeImagesPaths: [String] = []
+    public internal(set) var relativeImagesPaths: [String] = []
 
     /// Multipath  of the sources folders which will used in searching for images you actually use in your project. For Example ["/YouProject/Source",  "/OtherProject"]
-    var relativeSourcePaths: [String] = []
+    public internal(set) var relativeSourcePaths: [String] = []
 
-    /// Using localizations type from code. If you use custom you need define regex pattern
-    enum UsingType {
+    /// Using images type from code. If you use custom you need define regex pattern
+    public enum UsingType {
         case swiftUI
         case uiKit
         case uiKitLiteral
@@ -509,52 +943,60 @@ struct Settings {
         case custom(pattern: String, isSwiftGen: Bool)
     }
 
-    /// yuo can use many types
-    var usingTypes: [UsingType] = [
+    /// you can use many types of images usage
+    public internal(set) var usingTypes: [UsingType] = [
         .swiftGen(),
         .swiftUI,
         .uiKit,
         .uiKitLiteral
     ]
 
-    /**
-     If you want to exclude unused image from checking, you can define they this
+    /// Patterns of checking of the image name with filter
+    public enum CheckingNameType {
+        case firstUpperCase(message: String = "Name should start with uppercase", filter: ImageFilter?)
+        case camelCase(message: String = "Camel case support only", filter: ImageFilter?)
+        case sneak_case (message: String = "Sneak case support only", filter: ImageFilter?)
+        case kebab_case (message: String = "Kebab case support only", filter: ImageFilter?)
+        case custom (pattern: String, message: String = "Custom name checking", filter: ImageFilter?)
+    }
 
-     Example:
-      let ignoredUnusedImages = [
-         "ApplicationPoster"
-      ]
-     */
-    var ignoredUnusedImages: Set<String> = [ ]
-    var ignoredUndefinedImages: Set<String> = [ ]
+    /// you can check image name with a set of patterns
+    public internal(set) var checkingNameTypes: [CheckingNameType] = []
 
-    var rastorExtensions = Set<String>(["png", "jpg", "jpeg"].map{$0.uppercased()})
-    var vectorExtensions = Set<String>(["pdf", "svg"].map{$0.uppercased()})
+    /// If you want to exclude unused image from checking, you can define they this
+    public internal(set) var ignoredUnusedImages: Set<String> = [ ]
+    public internal(set) var ignoredUndefinedImages: Set<String> = [ ]
 
-    var sourcesExtensions = Set<String>(["swift", "mm", "m"].map{$0.uppercased()})
-    var resourcesExtensions = Set<String>(["storyboard", "xib"].map{$0.uppercased()})
+    public internal(set) var rastorExtensions = Set<String>(["png", "jpg", "jpeg"].map{$0.uppercased()})
+    public internal(set) var vectorExtensions = Set<String>(["pdf", "svg"].map{$0.uppercased()})
+
+    public internal(set) var sourcesExtensions = Set<String>(["swift", "mm", "m"].map{$0.uppercased()})
+    public internal(set) var resourcesExtensions = Set<String>(["storyboard", "xib"].map{$0.uppercased()})
 
     // If you wan't show double errors/warnings for all files of an image change this to false
-    var isAllFilesErrorShowing = false
+    public internal(set) var isAllFilesErrorShowing = false
 
-    // Maximum size of Vector files
-    var maxVectorFileSize: UInt64 = 20_000
-    var maxVectorImageSize: CGSize = CGSize(width: 100, height: 100)
+    // Maximum size of Vector files in bytes.
+    public internal(set) var maxVectorFileSize: UInt64 = 20_000
+    // Maximum size of Vector images in pixels.
+    public internal(set) var maxVectorImageSize: CGSize = CGSize(width: 100, height: 100)
 
-    // Maximum size of Rastor files
-    var maxRastorFileSize: UInt64 = 200_000
-    var maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
+    // Maximum size of Rastor files in bytes.
+    public internal(set) var maxRastorFileSize: UInt64 = 200_000
+    // Maximum size of Rastor images in pixels.
+    public internal(set) var maxRastorImageSize: CGSize = CGSize(width: 1000, height: 1000)
 
-    var isCheckingFileSize = true
-    var isCheckingImageSize = true
-    var isCheckingPdfVector = true
-    var isCheckingSvgVector = true
-    var isCheckingScaleSize = true
-    var isCheckingDuplicatedByName = true
-    var isCheckingDuplicatedByContent = true
+    public internal(set) var isCheckingFileSize = true
+    public internal(set) var isCheckingImageSize = true
+
+    public internal(set) var isCheckingPdfVector = true
+    public internal(set) var isCheckingSvgVector = true
+    public internal(set) var isCheckingScaleSize = true
+    public internal(set) var isCheckingDuplicatedByName = true
+    public internal(set) var isCheckingDuplicatedByContent = true
 
     /// Your project should compile for one or more platform. This need for detect quality of images.
-    enum TargetPlatform {
+    public enum TargetPlatform {
         case iOS
         case iPadOS
         case macOS
@@ -564,10 +1006,14 @@ struct Settings {
     }
 
     /// yuo can use many platforms
-    var targetPlatforms: [TargetPlatform] = [.iOS]
+    public internal(set) var targetPlatforms: [TargetPlatform] = [.iOS]
 
     init(){
         load()
+    }
+
+    public init(_ string: String) {
+        load(from: string)
     }
 
 }
@@ -578,59 +1024,12 @@ extension Settings {
     private static let fileName = "imagelinter"
     private static let defaultDir: String = pathWithSlash(FileManager.default.currentDirectoryPath)
 
-    private enum Key: String {
-        case isEnabled
-        case relativeImagesPaths
-        case relativeImagesPath
-        case relativeSourcePaths
-        case relativeSourcePath
-
-        case usingTypes
-
-        case ignoredUnusedImages
-        case ignoredUndefinedImages
-
-        case rastorExtensions
-        case vectorExtensions
-
-        case sourcesExtensions
-        case resourcesExtensions
-
-        case isAllFilesErrorShowing
-
-        case maxVectorFileSize
-        case maxVectorImageSize
-
-        case maxRastorFileSize
-        case maxRastorImageSize
-
-
-        case isCheckingFileSize
-        case isCheckingImageSize
-        case isCheckingPdfVector
-        case isCheckingSvgVector
-        case isCheckingScaleSize
-        case isCheckingDuplicatedByName
-        case isCheckingDuplicatedByContent
-
-        case targetPlatforms
-
-        enum UsingType: String {
-            case swiftUI
-            case uiKit
-            case uiKitLiteral
-            case swiftGen
-            case custom
+    static func pathWithSlash(_ path: String) -> String {
+        var result = path
+        if !result.hasSuffix("/") {
+            result = result + "/"
         }
-
-        enum TargetPlatform: String {
-            case iOS
-            case iPadOS
-            case macOS
-            case tvOS
-            case visionOS
-            case watchOS
-        }
+        return result
     }
 
     fileprivate mutating func load() {
@@ -653,14 +1052,6 @@ extension Settings {
         }
     }
 
-    private static func pathWithSlash(_ path: String) -> String {
-        var result = path
-        if !result.hasSuffix("/") {
-            result = result + "/"
-        }
-        return result
-    }
-
     fileprivate mutating func load(dir: String, ext: String) {
 
         let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
@@ -671,260 +1062,22 @@ extension Settings {
         self.dir = dir
         print("Parse settings file '\(filePath)':")
 
-        let lines = stringData.components(separatedBy: .newlines)
-
-        var currentKey: Key? = nil
-        var isStartKey: Bool = false
-        var lineIndex = 0
-
-        while lineIndex < lines.count {
-            let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-            lineIndex += 1
-
-            if line.hasPrefix("#") {
-                continue
-            }
-
-            var currentValue: String? = nil
-            if let value = Self.getArrayValue(line: line) {
-                currentValue = value
-            } else if let object = Self.getObject(line: line) {
-                if let key = Key(rawValue: object.name) {
-                    currentKey = key
-                    currentValue = object.value
-                    isStartKey = true
-                }
-            }
-
-            func getSize(defaultSize: CGSize) -> CGSize {
-                var width = defaultSize.width
-                var height = defaultSize.height
-
-                while lineIndex < lines.count
-                {
-                    let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                    if line.hasPrefix("#") == false,
-                       let object = Self.getObject(line: line)
-                    {
-                        if object.name == "width" {
-                            width = Double(object.value) ?? defaultSize.width
-                        } else if object.name == "height" {
-                            height = Double(object.value) ?? defaultSize.height
-                        } else {
-                            break
-                        }
-                    }
-                    lineIndex += 1
-                }
-
-                return CGSize(width: width, height: height)
-            }
-
-            guard let currentKey else { continue }
-            switch currentKey {
-            case .isEnabled:
-                if let value = currentValue, let isEnabled = Bool(value) {
-                    self.isEnabled = isEnabled
-                }
-            case .relativeImagesPath, .relativeImagesPaths:
-                if let value = currentValue, value != "" {
-                    relativeImagesPaths.append(Self.pathWithSlash(value))
-                }
-            case .relativeSourcePath, .relativeSourcePaths:
-                if let value = currentValue, value != "" {
-                    relativeSourcePaths.append(Self.pathWithSlash(value))
-                }
-            case .usingTypes:
-                if let value = currentValue, value.isEmpty == false {
-                    if let object = Self.getObject(line: value), object.name == "case" {
-                        if let usingType = Key.UsingType(rawValue: object.value) {
-                            switch usingType {
-                            case .swiftUI:
-                                self.usingTypes.append(.swiftUI)
-                            case .uiKit:
-                                self.usingTypes.append(.uiKit)
-                            case .uiKitLiteral:
-                                self.usingTypes.append(.uiKitLiteral)
-                            case .swiftGen:
-                                guard lineIndex < lines.count else {
-                                    break
-                                }
-                                let line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                                if line.hasPrefix("#") == false,
-                                   let object = Self.getObject(line: line),
-                                   object.name == "enumName"
-                                {
-                                    lineIndex += 1
-                                    self.usingTypes.append(.swiftGen(enumName: object.value))
-                                }
-                            case .custom:
-                                guard lineIndex < lines.count else {
-                                    break
-                                }
-                                var line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                                var customPattern: String?
-                                var customIsSwiftGen = false
-
-                                // TODO: # needs just continue
-                                while line.hasPrefix("#") == false,
-                                   let object = Self.getObject(line: line),
-                                   object.name == "pattern" || object.name == "isSwiftGen"
-                                {
-                                    lineIndex += 1
-                                    if object.name == "pattern" {
-                                        customPattern = object.value
-                                    } else if object.name == "isSwiftGen", let isSwiftGen = Bool(object.value) {
-                                        customIsSwiftGen = isSwiftGen
-                                    }
-                                    line = lines[lineIndex].trimmingCharacters(in: .whitespaces)
-                                }
-                                if let customPattern {
-                                    self.usingTypes.append(.custom(pattern: customPattern, isSwiftGen: customIsSwiftGen))
-                                }
-                            }
-                        }
-                    }
-                } else if isStartKey {
-                    self.usingTypes = []
-                }
-            case .ignoredUnusedImages:
-                if let value = currentValue, value.isEmpty == false {
-                    self.ignoredUnusedImages.insert(value)
-                } else if isStartKey {
-                    self.ignoredUnusedImages = []
-                }
-            case .ignoredUndefinedImages:
-                if let value = currentValue, value.isEmpty == false {
-                    self.ignoredUndefinedImages.insert(value)
-                } else if isStartKey {
-                    self.ignoredUndefinedImages = []
-                }
-            case .rastorExtensions:
-                if let value = currentValue, value.isEmpty == false {
-                    self.rastorExtensions.insert(value.uppercased())
-                } else if isStartKey {
-                    self.rastorExtensions = []
-                }
-            case .vectorExtensions:
-                if let value = currentValue, value.isEmpty == false {
-                    self.vectorExtensions.insert(value.uppercased())
-                } else if isStartKey {
-                    self.vectorExtensions = []
-                }
-            case .sourcesExtensions:
-                if let value = currentValue, value.isEmpty == false {
-                    self.sourcesExtensions.insert(value.uppercased())
-                } else if isStartKey {
-                    self.sourcesExtensions = []
-                }
-            case .resourcesExtensions:
-                if let value = currentValue, value.isEmpty == false {
-                    self.resourcesExtensions.insert(value.uppercased())
-                } else if isStartKey {
-                    self.resourcesExtensions = []
-                }
-            case .isAllFilesErrorShowing:
-                if let value = currentValue, let isAllFilesErrorShowing = Bool(value) {
-                    self.isAllFilesErrorShowing = isAllFilesErrorShowing
-                }
-            case .maxVectorFileSize:
-                if let value = currentValue, let maxVectorFileSize = UInt64(value) {
-                    self.maxVectorFileSize = maxVectorFileSize
-                }
-            case .maxVectorImageSize:
-                self.maxVectorImageSize = getSize(defaultSize: self.maxVectorImageSize)
-                
-            case .maxRastorFileSize:
-                if let value = currentValue, let maxRastorFileSize = UInt64(value) {
-                    self.maxRastorFileSize = maxRastorFileSize
-                }
-            case .maxRastorImageSize:
-                self.maxRastorImageSize = getSize(defaultSize: self.maxRastorImageSize)
-
-            case .isCheckingFileSize:
-                if let value = currentValue, let isCheckingFileSize = Bool(value) {
-                    self.isCheckingFileSize = isCheckingFileSize
-                }
-            case .isCheckingImageSize:
-                if let value = currentValue, let isCheckingImageSize = Bool(value) {
-                    self.isCheckingImageSize = isCheckingImageSize
-                }
-            case .isCheckingPdfVector:
-                if let value = currentValue, let isCheckingPdfVector = Bool(value) {
-                    self.isCheckingPdfVector = isCheckingPdfVector
-                }
-            case .isCheckingSvgVector:
-                if let value = currentValue, let isCheckingSvgVector = Bool(value) {
-                    self.isCheckingSvgVector = isCheckingSvgVector
-                }
-            case .isCheckingScaleSize:
-                if let value = currentValue, let isCheckingScaleSize = Bool(value) {
-                    self.isCheckingScaleSize = isCheckingScaleSize
-                }
-            case .isCheckingDuplicatedByName:
-                if let value = currentValue, let isCheckingDuplicatedByName = Bool(value) {
-                    self.isCheckingDuplicatedByName = isCheckingDuplicatedByName
-                }
-            case .isCheckingDuplicatedByContent:
-                if let value = currentValue, let isCheckingDuplicatedByContent = Bool(value) {
-                    self.isCheckingDuplicatedByContent = isCheckingDuplicatedByContent
-                }
-            case .targetPlatforms:
-                if let value = currentValue, value.isEmpty == false {
-                    if let targetPlatform = Key.TargetPlatform(rawValue: value) {
-                        switch targetPlatform {
-                        case .iOS:
-                            self.targetPlatforms.append(.iOS)
-                        case .iPadOS:
-                            self.targetPlatforms.append(.iPadOS)
-                        case .macOS:
-                            self.targetPlatforms.append(.macOS)
-                        case .tvOS:
-                            self.targetPlatforms.append(.tvOS)
-                        case .visionOS:
-                            self.targetPlatforms.append(.visionOS)
-                        case .watchOS:
-                            self.targetPlatforms.append(.watchOS)
-                        }
-                    }
-                } else if isStartKey {
-                    self.targetPlatforms = []
-                }
-            }
-            isStartKey = false
-        }
-        print("\(self)")
+        load(from: stringData)
     }
+}
 
-    private struct Object {
-        let name: String
-        let value: String
-    }
-
-    private static let regexObject = try! NSRegularExpression(pattern: #"^([A-z0-9]+?)\s*:"#, options: [.caseInsensitive])
-
-    private static func getObject(line: String) -> Object? {
-        let results = regexObject.matches(in: line, range: NSRange(line.startIndex..., in: line))
-        if let result = results.first {
-            let name = String(line[Range(result.range, in: line)!]).dropLast().trimmingCharacters(in: .whitespaces)
-            let value = line.suffix(from: Range(result.range, in: line)!.upperBound).trimmingCharacters(in: .whitespaces)
-            return Object(name: name, value: value)
+extension Settings.UsingType: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.custom(pattern: let lhsPattern, isSwiftGen: let lhsIsSwiftGen), .custom(pattern: let rhsPattern, isSwiftGen: let rhsIsSwiftGen)):
+            return (lhsPattern == rhsPattern) && (lhsIsSwiftGen == rhsIsSwiftGen)
+        case (.swiftGen(enumName: let lhsEnumName), .swiftGen(enumName: let rhsEnumName)):
+            return lhsEnumName == rhsEnumName
+        case (.uiKitLiteral, .uiKitLiteral), (.uiKit, .uiKit), (.swiftUI, .swiftUI):
+            return true
+        default :
+            return false
         }
-        return nil
-    }
-
-    private static func getArrayValue(line: String) -> String? {
-        guard line.first == "-" else {
-            return nil
-        }
-        return line.dropFirst().trimmingCharacters(in: .whitespaces)
-    }
-
-    private static func getArrayObject(line: String) -> Object? {
-        guard let value = getArrayValue(line: line) else {
-            return nil
-        }
-        return getObject(line: value)
     }
 }
 //
@@ -978,6 +1131,38 @@ for usingType in settings.usingTypes {
         isSwiftGen = true
     }
 }
+
+struct CheckingNameRegexPattern {
+    let pattern: NSRegularExpression
+    let message: String
+    let filter: ImageFilter?
+}
+var checkingNameTypesRegex: [CheckingNameRegexPattern] = []
+
+private func addCheckingNameRegexPattern(pattern: String, message: String, filter: ImageFilter?) {
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        printError(filePath: #file, message: "Not right pattern for regex: \(pattern)", line: #line)
+        return
+    }
+    checkingNameTypesRegex.append(CheckingNameRegexPattern(pattern: regex, message: message, filter: filter))
+}
+
+for checkingNameType in settings.checkingNameTypes {
+    switch checkingNameType {
+    case .firstUpperCase(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[A-Z].*$"#, message: message, filter: filter)
+    case .camelCase(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-zA-Z0-9\/]*$"#, message: message, filter: filter)
+    case .sneak_case(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9_\/]*$"#, message: message, filter: filter)
+    case .kebab_case(let message, let filter):
+        addCheckingNameRegexPattern(pattern: #"^[a-zA-Z][a-z0-9\-\/]*$"#, message: message, filter: filter)
+    case .custom(let pattern, let message, let filter):
+        addCheckingNameRegexPattern(pattern: pattern, message: message, filter: filter)
+    }
+}
+
+print("checkingNameTypesRegex: \(checkingNameTypesRegex)")
 
 let allImageScales = (1...3)
 var targetScales: Set<Int> = []
@@ -1100,6 +1285,9 @@ for relativeImagesPath in settings.relativeImagesPaths {
             if let imageInfo = ImageInfo.processFound(dir: imagesPath, path: imageFileName){
 
                 let fileSize = fileSize(fromPath: imageFilePath)
+
+                // TODO:  # bad idea fileSizes needs incapsulate to ImageInfo
+                imageInfo.fileSizes.append(fileSize)
 
                 if settings.vectorExtensions.contains(fileExtension) {
                     if settings.isCheckingFileSize, fileSize > settings.maxVectorFileSize {
@@ -1251,6 +1439,26 @@ for imageInfo in images {
     }
 }
 
+for imageName in Set(foundedImages.keys).subtracting(settings.ignoredUnusedImages) {
+    guard let imageInfo = foundedImages[imageName] else {
+        continue
+    }
+    var message = ""
+    for checkingNameTypeRegex in checkingNameTypesRegex {
+        if let filter = checkingNameTypeRegex.filter {
+            if !filter.include(image: imageInfo) {
+                continue
+            }
+        }
+        if checkingNameTypeRegex.pattern.firstMatch(in: imageName, options: [], range: NSRange(location: 0, length: imageName.count)) == nil {
+            message += checkingNameTypeRegex.message + ". "
+        }
+    }
+    if message != "" {
+        imageInfo.error(with: "Incorrect image name '\(imageInfo.name)': \(message)")
+    }
+}
+
 if settings.isCheckingDuplicatedByContent {
     for (index, imageInfo1) in images.enumerated() {
         for i in index + 1..<images.count {
@@ -1274,4 +1482,260 @@ print("Time: \(Date().timeIntervalSince(startDate)) sec.")
 
 if errorsCount > 0 {
     exit(1)
+}
+//
+//  ImageFilter.swift
+//  Imagelinter
+//
+//  Created by Sergey Balalaev on 09.12.2025.
+//
+
+import Foundation
+
+public struct ImageFilter {
+
+    public protocol Condition {
+        func include(image: ImageInfo) -> Bool
+    }
+
+    public private(set) var andConditions: [Condition] = []
+
+    public init? (_ string: String) {
+        guard string.isEmpty == false else {
+            return nil
+        }
+        string.components(separatedBy: ",").forEach { conditionString in
+            if let orConditions = OrCondition(conditionString) {
+                andConditions.append(orConditions)
+            }
+        }
+        if andConditions.isEmpty {
+            return nil
+        }
+    }
+
+    public func include(image: ImageInfo) -> Bool {
+        var result = true
+        andConditions.forEach { condition in
+            result = result && condition.include(image: image)
+        }
+        return result
+    }
+}
+
+extension ImageFilter {
+    public struct OrCondition: Condition {
+        public private(set) var orConditions: [Condition] = []
+
+        init? (_ string: String) {
+            guard string.isEmpty == false else {
+                return nil
+            }
+            if let imageTypeCondition = ImageTypeCondition(string) {
+                orConditions.append(imageTypeCondition)
+            }
+            if let sizeCondition = SizeCondition(string) {
+                orConditions.append(sizeCondition)
+            }
+            if orConditions.isEmpty {
+                return nil
+            }
+        }
+
+        public func include(image: ImageInfo) -> Bool {
+            var result: Bool = false
+            orConditions.forEach { condition in
+                result = result || condition.include(image: image)
+            }
+            return result
+        }
+    }
+}
+
+extension ImageFilter {
+    public struct ImageTypeCondition: Condition {
+
+        private static let pattern = try! NSRegularExpression(pattern: #"[\s\/\|\/]*(undefined|rastor|vector|mixed)[\s\/\|\/]*"#, options: [])
+
+        public private(set) var types: Set<ImageInfo.ImageType>
+
+        init? (_ string: String) {
+            guard string.isEmpty == false else {
+                return nil
+            }
+            var types = Set<ImageInfo.ImageType>()
+            Self.pattern.matches(in: string, options: [], range: NSRange(string.startIndex..., in: string)).forEach
+            { result in
+                guard result.numberOfRanges > 0 else {
+                    return
+                }
+                (1...result.numberOfRanges - 1).map { index in
+                    let value = (string as NSString).substring(with: result.range(at: index))
+                    if let type = ImageInfo.ImageType(rawValue: value) {
+                        types.insert(type)
+                    }
+                }
+            }
+            if types.isEmpty {
+                return nil
+            }
+            self.types = types
+        }
+
+        public func include(image: ImageInfo) -> Bool {
+            types.contains(image.type)
+        }
+    }
+}
+
+extension ImageFilter {
+    public enum Messure {
+        case bytes
+        case pixels
+
+        init?(string: String) {
+            if string == "PX" || string == "px" || string == "Px" {
+                self = .pixels
+            } else if string == "B" || string == "b" {
+                self = .bytes
+            } else {
+                return nil
+            }
+        }
+    }
+
+    public enum Comparison {
+        case equal
+        case greater
+        case less
+
+        init?(string: String) {
+            if string == ">" || string == "=>" || string == ">=" {
+                self = .greater
+            } else if string == "<" || string == "=<" || string == "<=" {
+                self = .less
+            } else if string == "=" || string == "==" {
+                self = .equal
+            } else {
+                return nil
+            }
+        }
+    }
+
+    public struct Size {
+        public let value: Int64
+        public let messure: Messure
+        public let comparison: Comparison
+
+        init?(strings: [String]) {
+            guard strings.count == 4 else {
+                return nil
+            }
+            guard let comparison = Comparison(string: strings[0]) else {
+                return nil
+            }
+            guard var rawValue = Double(strings[1]) else {
+                return nil
+            }
+            guard let messure = Messure(string: strings[3]) else {
+                return nil
+            }
+            let scale = strings[2].uppercased()
+            if messure == .pixels {
+                if scale == "M" {
+                    rawValue *= 1000 * 1000
+                } else if scale == "K" {
+                    rawValue *= 1000
+                }
+            } else if messure == .bytes {
+                if scale == "M" {
+                    rawValue *= 1024 * 1024
+                } else if scale == "K" {
+                    rawValue *= 1024
+                }
+            }
+            self.value = Int64(rawValue)
+            self.messure = messure
+            self.comparison = comparison
+        }
+
+        public func include(image: ImageInfo) -> Bool {
+            var value: UInt64 = 0
+
+            switch messure {
+            case .bytes:
+                guard let size = image.fileSizes.first else {
+                    return true
+                }
+
+                value = size
+                for item in image.fileSizes {
+                    if value < item {
+                        value = item
+                    }
+                }
+            case .pixels:
+                guard let size = image.imageSizes.first else {
+                    return true
+                }
+
+                value = UInt64(size.width)
+                for item in image.imageSizes {
+                    if value < UInt64(item.height) {
+                        value = UInt64(item.height)
+                    } else if value < UInt64(item.width) {
+                        value = UInt64(item.width)
+                    }
+                }
+            }
+
+            switch comparison {
+            case .equal:
+                return value == Int64(self.value)
+            case .greater:
+                return value >= Int64(self.value)
+            case .less:
+                return value <= Int64(self.value)
+            }
+        }
+    }
+
+    public struct SizeCondition: Condition {
+        private static let pattern = try! NSRegularExpression(pattern: #"[\s\/\|\/]*(>|=>|>=|<|=<|<=|=|==)\s*([0-9.]*)\s*(M|m|K|k|)(PX|px|Px|b|B)[\s\/\|\/]*"#, options: [])
+
+        public private(set) var size: [Size] = []
+
+        init? (_ string: String) {
+            guard string.isEmpty == false else {
+                return nil
+            }
+            Self.pattern.matches(in: string, options: [], range: NSRange(string.startIndex..., in: string)).forEach
+            { result in
+                guard result.numberOfRanges > 0 else {
+                    return
+                }
+                var strings : [String] = []
+                (1...result.numberOfRanges - 1).map { index in
+                    let value = (string as NSString).substring(with: result.range(at: index))
+                    strings.append(value)
+                }
+                if let size = Size(strings: strings) {
+                    self.size.append(size)
+                }
+            }
+            if self.size.isEmpty {
+                return nil
+            }
+        }
+
+        public func include(image: ImageInfo) -> Bool {
+            var result: Bool = false
+
+            for item in size {
+                result = result || item.include(image: image)
+            }
+
+            return result
+        }
+    }
 }
