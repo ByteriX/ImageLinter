@@ -319,17 +319,13 @@ targetPlatforms:
 In yaml settings may used `filter` string value for execute query of images with conditions, described according to the following diagram:
 
 ```
-
 [image type], [condition] [value of size] [multiplier for value] [messure of size], etc
-
 ```
 
 You can use a comma or a vertical bar to make a logical and/or in statement for any number of expressions:
 
 ```
-
 [query1],[query2]|[query3]|[query4], [query5] | [query6]
-
 ```
 
 #### Table of expressions:
