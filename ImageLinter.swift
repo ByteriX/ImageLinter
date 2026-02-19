@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 2.3.0
+ version 2.3.1
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2025 ByteriX. All rights reserved.
@@ -1117,8 +1117,11 @@ private func addSourceRegexPattern(pattern: String, isSwiftGen: Bool) {
 
 for usingType in settings.usingTypes {
     switch usingType {
-    case .custom(let pattern, let isSwiftGen):
-        addSourceRegexPattern(pattern: pattern, isSwiftGen: isSwiftGen)
+    case .custom(let pattern, let isLocalSwiftGen):
+        addSourceRegexPattern(pattern: pattern, isSwiftGen: isLocalSwiftGen)
+        if isLocalSwiftGen {
+            isSwiftGen = true
+        }
     case .swiftUI:
         addSourceRegexPattern(pattern: #"\bImage\(\s*"(.*)"\s*\)"#, isSwiftGen: false)
     case .uiKit:
@@ -1416,7 +1419,7 @@ func addUsedImage(from string: String, result: NSTextCheckingResult?, path: Stri
 
 let standartUnusedImages = Set(foundedImages.keys).subtracting(usedImages).subtracting(settings.ignoredUnusedImages)
 let swiftGenUnusedImages = Set(foundedSwiftGenMirrorImages.keys).subtracting(usedImagesFromSwiftGen).subtracting(settings.ignoredUnusedImages)
-let unusedImages = Set(standartUnusedImages).intersection(swiftGenUnusedImages.compactMap {foundedSwiftGenMirrorImages[$0]} )
+let unusedImages = isSwiftGen ? Set(standartUnusedImages).intersection(swiftGenUnusedImages.compactMap {foundedSwiftGenMirrorImages[$0]} ) : standartUnusedImages
 
 for unusedImage in unusedImages {
     if let imageInfo = foundedImages[unusedImage] {
