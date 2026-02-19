@@ -1,4 +1,5 @@
 isCheckingDuplicatedByContent: true
 relativeImagesPaths:
-   - /Resources
-relativeSourcePath:
+  - /Resources
+relativeSourcePaths:
+  - /Content

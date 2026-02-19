@@ -1,7 +1,6 @@
 
 isEnabled: true
 relativeImagesPath: /Sources/Images/Resources/Error
-relativeSourcePath: /
 relativeSourcePaths:
   - /Sources1
   - /Sources2
@@ -12,13 +11,11 @@ usingTypes:
   - case: swiftGen
     enumName: Asset
   - case: custom
-    pattern: "(.*)".image
+    pattern: \"([^\"]*?)\".image
     isSwiftGen: false
   - case: custom
-    pattern: "(.*)".image
-    isSwiftGen: true
-    - case: custom
     pattern: "(.*)".name
+    isSwiftGen: true
 checkingNameTypes:
   - case: camelCase
     filter: vector, >1kb

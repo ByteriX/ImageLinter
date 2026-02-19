@@ -30,7 +30,8 @@ public struct ContentView: View {
             // Asset.Folder.duplicatedImage3.image
             // Asset.duplicatedImage1.image
             // Asset.snakeCaseImage.name
-            
+            // Asset.notFoundedImage.image
+
             Image("snake-case_image")
         }
         .padding()
