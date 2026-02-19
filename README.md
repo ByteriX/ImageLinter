@@ -19,11 +19,11 @@ Check image files and resources for Swift
 
 ## Accessibility
 
-1. Possible analyse the sources (swift, Objective-C files) and resources (Storyboard, xib files)
-2. Support Assets and files with @Xx notation
+1. Possible analyse the sources (swift, Objective-C files) and resources (xcassets, Storyboard, xib files, images files)
+2. Support xcassets and images files with @Xx notation
 3. vector/rastor diffenition and you can limit use formats by PNG, JPG, PDF, SVG, etc formats
 4. Support any use notation: SwiftUI, UIKit, SwiftGen, and custom Regex
-5. You can ignore any images or sources use
+5. You can ignore any images or sources use if need
 6. Any settings for generation errors or warnings with different filters
 
 ## Install
@@ -70,12 +70,12 @@ If you want to have a custom path to settings file, you can use `--settingsPath 
 
 ### How to setting up your yaml file
 
-**isEnabled** - turn on/off working of this plugin/script. Is boolean param with `true` \ `false` value. Default is `true`.
+**isEnabled** - turn on/off working of this plugin/script. Is boolean param with `true` \ `false` value. Default is `true`. Example:
 ```yaml
 isEnabled: true
 ```
 
-**relativeImagesPath** (*deprecated*) please use array of path `relativeImagesPaths`. Now you can use jointly `relativeImagesPaths`. From 2.0 version will be removed.
+**relativeImagesPath** (*deprecated*) please use array of path `relativeImagesPaths`. Now you can use jointly `relativeImagesPaths`. From 2.0 version will be removed. Example:
 ```yaml
 relativeImagesPath: /Sources/Images/Resource1
 relativeImagesPaths:
@@ -83,15 +83,27 @@ relativeImagesPaths:
   - /Sources/Images/Resource3
 ```
 
-**relativeImagesPaths** array of paths to directory that contains assets and images of project. Please don't contents name of assets or files to path.
+**relativeImagesPaths** array of paths to directory that contains xcassets and images files of project. Example:
 ```yaml
 relativeImagesPaths:
   - /Sources/Images/Resource2
   - /Modules/Module1/Images
   - /Modules/Module2/Images
 ```
+Please don't contents name of .xcassets or images files to path. Path should reference directory who content images files or xcassets. Examples:
+**⛔ How not to do it:**
+```yaml
+relativeImagesPaths:
+  - /Resources/Images/Catalog.xcassets
+  - /Resources/Images/Icon.png
+```
+**✅ As it should be:**
+```yaml
+relativeImagesPaths:
+  - /Resources/Images/
+```
 
-**relativeSourcePath** (*deprecated*) please use array of path `relativeSourcePaths`. Now you can use jointly `relativeSourcePaths`. From 2.0 version will be removed.
+**relativeSourcePath** (*deprecated*) please use array of path `relativeSourcePaths`. Now you can use jointly `relativeSourcePaths`. From 2.0 version will be removed. Example:
 ```yaml
 relativeSourcePath: /Main/src
 relativeSourcePaths:
@@ -99,12 +111,24 @@ relativeSourcePaths:
   - /Module2/src
 ```
 
-**relativeSourcePaths** array of paths to directory that contains files with a source code of project which use images. Please don't contents name of files to path.
+**relativeSourcePaths** array of paths to directory that contains files with a source code of project which use images. Please don't contents name of files to path. Example:
 ```yaml
-relativeImagesPaths:
+relativeSourcePaths:
   - /Sources/
   - /Modules/Module1/Sources
   - /Modules/Module2/Sources
+```
+Please don't contents name of sources files to path. Path should reference directory who content sources files. Examples:
+**⛔ How not to do it:**
+```yaml
+relativeSourcePaths:
+  - /Sources/View/ContentView.swift
+  - /Sources/Utils.c
+```
+**✅ As it should be:**
+```yaml
+relativeSourcePaths:
+  - /Sources/
 ```
 
 **usingTypes** - array of ways to use images from sources. You can use pre-installed case or/and make your regular expressions to match with your a way to use images.
