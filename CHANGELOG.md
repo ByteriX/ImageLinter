@@ -3,6 +3,13 @@
 
 Any significant changes made to this project will be documented in this file.
 
+## [2.3.2] - 2026-02-25
+
+#### Fixed
+
+- #17 using deprecated in macOS 15: 'init(contentsOfFile:)'. That edited to 'init(contentsOfFile:encoding:)'.
+- SwiftGen warnings.
+
 ## [2.3.1] - 2026-02-20
 
 #### Fixed
