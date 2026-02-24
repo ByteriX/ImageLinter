@@ -23,6 +23,7 @@ internal typealias AssetImageTypeAlias = ImageAsset.Image
 internal enum Asset {
   internal static let accentColor = ColorAsset(name: "AccentColor")
   internal static let badRaster = ImageAsset(name: "BadRaster")
+  internal static let bigImages = ImageAsset(name: "BigImages")
   internal static let bigRastor = ImageAsset(name: "BigRastor")
   internal static let bigVector = ImageAsset(name: "BigVector")
   internal static let duplicate = ImageAsset(name: "Duplicate")
@@ -40,6 +41,7 @@ internal enum Asset {
   internal static let notFoundFile = ImageAsset(name: "NotFoundFile")
   internal static let notUsingImage = ImageAsset(name: "NotUsingImage")
   internal static let duplicatedImage1 = ImageAsset(name: "DuplicatedImage1")
+  internal static let snakeCaseImage = ImageAsset(name: "snake-case_image")
   internal static let truePdf = ImageAsset(name: "TruePdf")
   internal static let truePng = ImageAsset(name: "TruePng")
   internal static let twoVectors = ImageAsset(name: "TwoVectors")
@@ -59,7 +61,7 @@ internal final class ColorAsset {
   internal typealias UIColor = UIKit.UIColor
   #endif
 
-  @available(iOS 11.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
+  @available(iOS 13.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
   internal private(set) lazy var color: Color = {
     guard let color = Color(asset: self) else {
       fatalError("Unable to load color asset named \(name).")
@@ -92,7 +94,7 @@ internal final class ColorAsset {
 }
 
 internal extension ColorAsset.Color {
-  @available(iOS 11.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
+  @available(iOS 13.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
   init?(asset: ColorAsset) {
     let bundle = BundleToken.bundle
     #if os(iOS) || os(tvOS)
@@ -175,7 +177,7 @@ internal struct ImageAsset {
 }
 
 internal extension ImageAsset.Image {
-  @available(iOS 8.0, tvOS 9.0, watchOS 2.0, *)
+  @available(iOS 13.0, tvOS 9.0, watchOS 2.0, *)
   @available(macOS, deprecated,
     message: "This initializer is unsafe on macOS, please use the ImageAsset.image property")
   init?(asset: ImageAsset) {

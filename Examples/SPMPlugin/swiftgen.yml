@@ -1,14 +1,13 @@
 
 
 input_dir: Example/
-output_dir: Example/Generated/
+output_dir: Example/Modules/Images/Sources/Images/Generated/
 
 ## see https://www.raywenderlich.com/23709326-swiftgen-tutorial-for-ios
 
 xcassets:
   inputs:
-    - Assets.xcassets
-    - *.png
+    - Modules/Images/Sources/Images/Resources
   outputs:
     ##templateName: swift5
     templatePath: SwiftGen/assets.stencil

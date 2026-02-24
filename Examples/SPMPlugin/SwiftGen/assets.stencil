@@ -164,7 +164,7 @@
   {{accessModifier}} typealias UIColor = UIKit.UIColor
   #endif
 
-  @available(iOS 11.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
+  @available(iOS 13.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
   {{accessModifier}} private(set) lazy var color: Color = {
     guard let color = Color(asset: self) else {
       fatalError("Unable to load color asset named \(name).")
@@ -197,7 +197,7 @@
 }
 
 {{accessModifier}} extension {{colorType}}.Color {
-  @available(iOS 11.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
+  @available(iOS 13.0, tvOS 11.0, watchOS 4.0, macOS 10.13, *)
   init?(asset: {{colorType}}) {
     let bundle = {{param.bundle|default:"BundleToken.bundle"}}
     #if os(iOS) || os(tvOS)
@@ -308,7 +308,7 @@
 }
 
 {{accessModifier}} extension {{imageType}}.Image {
-  @available(iOS 8.0, tvOS 9.0, watchOS 2.0, *)
+  @available(iOS 13.0, tvOS 9.0, watchOS 2.0, *)
   @available(macOS, deprecated,
     message: "This initializer is unsafe on macOS, please use the {{imageType}}.image property")
   init?(asset: {{imageType}}) {
