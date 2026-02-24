@@ -141,7 +141,7 @@ extension Settings {
     fileprivate mutating func load(dir: String, ext: String) {
 
         let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
-        guard let stringData = try? String(contentsOfFile: filePath) else {
+        guard let stringData = try? String(contentsOfFile: filePath, encoding: .utf8) else {
             print("Settings file '\(filePath)' not found")
             return
         }
