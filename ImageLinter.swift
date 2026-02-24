@@ -5,7 +5,7 @@ import AppKit
 
 /**
  ImageLinter.swift
- version 2.3.1
+ version 2.3.2
 
  Created by Sergey Balalaev on 23.09.22.
  Copyright (c) 2022-2025 ByteriX. All rights reserved.
@@ -1055,7 +1055,7 @@ extension Settings {
     fileprivate mutating func load(dir: String, ext: String) {
 
         let filePath = (dir as NSString).appendingPathComponent(Self.fileName + "." + ext)
-        guard let stringData = try? String(contentsOfFile: filePath) else {
+        guard let stringData = try? String(contentsOfFile: filePath, encoding: .utf8) else {
             print("Settings file '\(filePath)' not found")
             return
         }
